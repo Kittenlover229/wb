@@ -5,7 +5,7 @@ mod token;
 mod rules;
 
 fn main() {
-    let input = "let integer = 30;";
+    let input = "let\ninteger = 30;";
     let tokens = try_tokenize(input);
 
     for tok in tokens {
