@@ -1,125 +1,81 @@
-use crate::token::*;
 use regex::Regex;
 
-pub type TokenizerRule = dyn Fn(&str, SourceLocation) -> Option<(Token, &str, SourceLocation)>;
+use crate::{
+    rules::{RegexTokenizerRule, TokenizerRule},
+    token::*,
+};
 
 pub struct TokenStream<'a> {
     pub input: &'a str,
+    pub loc: SourceLocation,
 
-    tokenizer_rules: Vec<Box<TokenizerRule>>,
+    tokenizer_rules: Vec<Box<dyn TokenizerRule>>,
 }
 
-pub fn tokenize<'a>(input: &'a str) -> TokenStream<'a> {
-    let tokenizer_rules: Vec<Box<TokenizerRule>> = vec![
-        Box::new(|s, loc| {
-            let re: Regex = Regex::new(r"^let").unwrap();
-            let m = re.find(s)?;
-            if m.start() != 0 {
-                return None;
-            }
-
-            let (capture, rest) = s.split_at(m.end());
-            Some((
-                Token {
-                    capture,
-                    loc,
-                    kind: TokenKind::Keyword,
-                },
-                rest,
+pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
+    let tokenizer_rules: Vec<Box<dyn TokenizerRule>> = vec![
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^let").unwrap(),
+            Box::new(|_, span, loc| Token {
                 loc,
-            ))
-        }),
-        Box::new(|s, loc| {
-            let re: Regex = Regex::new(r"^\s+").unwrap();
-            let m = re.find(s)?;
-            if m.start() != 0 {
-                return None;
-            }
-
-            let (capture, rest) = s.split_at(m.end());
-            Some((
-                Token {
-                    capture,
-                    loc,
-                    kind: TokenKind::Whitespace,
-                },
-                rest,
+                span,
+                kind: TokenKind::Keyword,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^\s+").unwrap(),
+            Box::new(|_, span, loc| Token {
                 loc,
-            ))
-        }),
-        Box::new(|s, loc| {
-            let re: Regex = Regex::new(r"[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
-            let m = re.find(s)?;
-            if m.start() != 0 {
-                return None;
-            }
-
-            let (capture, rest) = s.split_at(m.end());
-            Some((
-                Token {
-                    capture,
-                    loc,
-                    kind: TokenKind::Identifier,
-                },
-                rest,
+                span,
+                kind: TokenKind::Whitespace,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap(),
+            Box::new(|_, span, loc| Token {
                 loc,
-            ))
-        }),
-        Box::new(|s, loc| {
-            let re: Regex = Regex::new(r"[=;]").unwrap();
-            let m = re.find(s)?;
-            if m.start() != 0 {
-                return None;
-            }
-
-            let (capture, rest) = s.split_at(m.end());
-            Some((
-                Token {
-                    capture,
-                    loc,
-                    kind: TokenKind::Punctuation,
-                },
-                rest,
+                span,
+                kind: TokenKind::Identifier,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[=;]").unwrap(),
+            Box::new(|_, span, loc| Token {
                 loc,
-            ))
-        }),
-        Box::new(|s, loc| {
-            let re: Regex = Regex::new(r"[0-9]+").unwrap();
-            let m = re.find(s)?;
-            if m.start() != 0 {
-                return None;
-            }
-
-            let (capture, rest) = s.split_at(m.end());
-            Some((
-                Token {
-                    capture,
-                    loc,
-                    kind: TokenKind::Integer,
-                },
-                rest,
+                span,
+                kind: TokenKind::Punctuation,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[0-9]+").unwrap(),
+            Box::new(|_, span, loc| Token {
                 loc,
-            ))
-        }),
+                span,
+                kind: TokenKind::Integer,
+            }),
+        ),
     ];
 
     TokenStream {
         input,
+        loc: Default::default(),
         tokenizer_rules,
     }
 }
 
 impl<'a> Iterator for TokenStream<'a> {
-    type Item = Token<'a>;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         for rule in &self.tokenizer_rules {
-            match rule(self.input, SourceLocation {}) {
-                None => continue,
-                Some((tok, rest, _loc)) => {
+            match rule.try_tokenize(self.input, self.loc) {
+                Some((tok, rest, loc)) => {
+                    let ret = Some(tok);
                     self.input = rest;
-                    return Some(tok);
+                    self.loc = loc;
+                    return ret;
                 }
+                None => continue,
             }
         }
 
