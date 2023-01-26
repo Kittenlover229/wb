@@ -16,6 +16,7 @@ pub struct RegexTokenizerRule {
 
 impl RegexTokenizerRule {
     pub fn new(regex: Regex, token_from: Box<dyn Fn(&str, SourceSpan, SourceLocation) -> Token>) -> Self {
+        assert!(!regex.is_match(""));
         RegexTokenizerRule { regex, token_from }
     }
 
