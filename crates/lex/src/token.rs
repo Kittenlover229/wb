@@ -56,6 +56,8 @@ pub enum Operator {
     Mul,
     Div,
     Mod,
+    Greater,
+    Less,
 }
 
 #[derive(Debug, PartialEq)]

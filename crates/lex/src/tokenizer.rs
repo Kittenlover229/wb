@@ -20,6 +20,8 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             "*" => Operator::Mul,
             "/" => Operator::Div,
             "%" => Operator::Mod,
+            ">" => Operator::Greater,
+            "<" => Operator::Less,
             _ => unreachable!(),
         }
     }
@@ -73,7 +75,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[-\+\\*%]=").unwrap(),
+            Regex::new(r"^[-\+\\*%><]=").unwrap(),
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
@@ -81,7 +83,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[-\+\\*%]").unwrap(),
+            Regex::new(r"^[-\+\\*%><]").unwrap(),
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
