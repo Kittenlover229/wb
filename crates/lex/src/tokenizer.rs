@@ -30,11 +30,19 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[ \t]+").unwrap(),
+            Regex::new(r"^[0-9_]+").unwrap(),
             Box::new(|_, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::Whitespace,
+                kind: TokenKind::Integer,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[ \t]+").unwrap(),
+            Box::new(|captured, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::Whitespace(captured.len() as u32),
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -59,14 +67,6 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
                 loc,
                 span,
                 kind: TokenKind::Punctuation,
-            }),
-        ),
-        RegexTokenizerRule::new_box(
-            Regex::new(r"^[0-9]+").unwrap(),
-            Box::new(|_, span, loc| Token {
-                loc,
-                span,
-                kind: TokenKind::Integer,
             }),
         ),
     ];

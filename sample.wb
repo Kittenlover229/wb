@@ -1,4 +1,4 @@
-let x = 4
+let  x = 4
 while x > 0:
     let y = x
     while y > 0:
