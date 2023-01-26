@@ -63,8 +63,29 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
                     span,
                     loc,
                 },
+                Some(next)
+            ) => {
+                out.push(Token {kind: TokenKind::Newline, span, loc});
+                for _ in 0..indentation {
+                    out.push(Token {
+                        kind: TokenKind::Dendent,
+                        span,
+                        loc,
+                    });
+                }
+                indentation = 0;
+                prev = next;
+            }
+
+            (
+                Token {
+                    kind: TokenKind::Newline,
+                    span,
+                    loc,
+                },
                 None,
             ) => {
+                out.push(Token {kind: TokenKind::Newline, span, loc});
                 for _ in 0..indentation {
                     out.push(Token {
                         kind: TokenKind::Dendent,
@@ -80,9 +101,9 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
                 break;
             }
 
-            (tok, Some(next_tok)) => {
+            (tok, Some(next)) => {
                 let temp = tok;
-                prev = next_tok;
+                prev = next;
                 out.push(temp);
             }
             _ => unreachable!(),
