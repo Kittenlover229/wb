@@ -44,8 +44,14 @@ impl Default for SourceLocation {
 pub type SourceSpan = (usize, usize);
 
 #[derive(Debug)]
+pub enum Keyword {
+    Let,
+    While,
+}
+
+#[derive(Debug)]
 pub enum TokenKind {
-    Keyword,
+    Keyword(Keyword),
     Identifier,
     Punctuation,
     Whitespace,

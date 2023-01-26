@@ -16,10 +16,17 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
     let tokenizer_rules: Vec<Box<dyn TokenizerRule>> = vec![
         RegexTokenizerRule::new_box(
             Regex::new(r"^(let|while)").unwrap(),
-            Box::new(|_, span, loc| Token {
-                loc,
-                span,
-                kind: TokenKind::Keyword,
+            Box::new(|captured: &str, span, loc| {
+                use Keyword::*;
+                Token {
+                    loc,
+                    span,
+                    kind: TokenKind::Keyword(match captured {
+                        "let" => Let,
+                        "while" => While,
+                        _ => unreachable!(),
+                    }),
+                }
             }),
         ),
         RegexTokenizerRule::new_box(
