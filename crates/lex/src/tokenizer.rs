@@ -15,7 +15,7 @@ pub struct TokenStream<'a> {
 pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
     let tokenizer_rules: Vec<Box<dyn TokenizerRule>> = vec![
         RegexTokenizerRule::new_box(
-            Regex::new(r"^let").unwrap(),
+            Regex::new(r"^(let|while)").unwrap(),
             Box::new(|_, span, loc| Token {
                 loc,
                 span,
@@ -23,11 +23,19 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^\s+").unwrap(),
+            Regex::new(r"^[ \t]+").unwrap(),
             Box::new(|_, span, loc| Token {
                 loc,
                 span,
                 kind: TokenKind::Whitespace,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[\n\r]").unwrap(),
+            Box::new(|_, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::Newline,
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -39,7 +47,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[=;]").unwrap(),
+            Regex::new(r"^[(-=)(+=)><;=]").unwrap(),
             Box::new(|_, span, loc| Token {
                 loc,
                 span,

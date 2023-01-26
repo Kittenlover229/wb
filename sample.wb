@@ -1,0 +1,7 @@
+let x = 4
+while x > 0:
+    let y = x
+    while y > 0:
+        print y
+        y -= 1
+    x -= 1
