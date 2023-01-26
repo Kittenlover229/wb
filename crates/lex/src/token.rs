@@ -55,7 +55,7 @@ pub enum TokenKind {
     Identifier,
     Punctuation,
     Whitespace(u32),
-    Indent(u32),
+    Indent,
     Dendent,
     Newline,
     Integer,
