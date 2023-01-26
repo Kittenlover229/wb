@@ -44,10 +44,10 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
         ),
         RegexTokenizerRule::new_box(
             Regex::new(r"^[0-9_]+").unwrap(),
-            Box::new(|_, span, loc| Token {
+            Box::new(|captured, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::Integer,
+                kind: TokenKind::Integer(captured.to_string()),
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -68,10 +68,10 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
         ),
         RegexTokenizerRule::new_box(
             Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap(),
-            Box::new(|_, span, loc| Token {
+            Box::new(|captured, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::Identifier,
+                kind: TokenKind::Identifier(captured.to_string()),
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -79,7 +79,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::CompoundOperator(string_to_op(&captured[..captured.len()-1])),
+                kind: TokenKind::CompoundOperator(string_to_op(&captured[..captured.len() - 1])),
             }),
         ),
         RegexTokenizerRule::new_box(

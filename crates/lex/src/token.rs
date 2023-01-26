@@ -43,6 +43,11 @@ impl Default for SourceLocation {
 
 pub type SourceSpan = (usize, usize);
 
+pub trait SourceObject {
+    fn source_location(&self) -> SourceLocation;
+    fn source_span(&self) -> SourceSpan;
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Keyword {
     Let,
@@ -63,7 +68,7 @@ pub enum Operator {
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword(Keyword),
-    Identifier,
+    Identifier(String),
     Operator(Operator),
     CompoundOperator(Operator),
     Punctuation,
@@ -71,7 +76,7 @@ pub enum TokenKind {
     Indent,
     Dendent,
     Newline,
-    Integer,
+    Integer(String),
 }
 
 #[derive(Debug)]
@@ -79,4 +84,14 @@ pub struct Token {
     pub loc: SourceLocation,
     pub span: SourceSpan,
     pub kind: TokenKind,
+}
+
+impl SourceObject for Token {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
 }

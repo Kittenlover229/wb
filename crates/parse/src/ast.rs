@@ -1,4 +1,4 @@
-use lex::{SourceLocation, SourceSpan};
+use lex::{SourceLocation, SourceSpan, SourceObject};
 
 pub trait AstNode {
     fn source_location(&self) -> (SourceSpan, SourceLocation);
@@ -6,34 +6,41 @@ pub trait AstNode {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    AssignmentStmt(AssignmentStatement),
+    VarDeclStmt(VarDeclStatement),
 }
 
 pub use Statement::*;
 
 #[derive(Debug, Clone)]
-pub struct AssignmentStatement {
-    pub identifier: String,
-    pub expr: Expression,
+pub struct VarDeclStatement {
+    pub varname: String,
+    pub rhs: Expression,
 
-    pub(crate) loc: SourceLocation,
     pub(crate) span: SourceSpan,
-}
-
-impl AstNode for AssignmentStatement {
-    fn source_location(&self) -> (SourceSpan, SourceLocation) {
-        (self.span, self.loc)
-    }
+    pub(crate) loc: SourceLocation,
 }
 
 #[derive(Debug, Clone)]
 pub enum Expression {
-    IntegerExpr(IntegerExpression),
+    IntegerLiteral(IntegerLiteral),
 }
 
 pub use Expression::*;
 
 #[derive(Debug, Clone)]
-pub struct IntegerExpression {
+pub struct IntegerLiteral {
+    pub span: SourceSpan,
+    pub loc: SourceLocation,
+
     pub(crate) number: String,
+}
+
+impl SourceObject for IntegerLiteral {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
 }
