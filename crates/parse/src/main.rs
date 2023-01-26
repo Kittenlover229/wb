@@ -15,7 +15,7 @@ fn main() {
         println!("{tok:?}");
     }
 
-    let toks = indented_toks.into_iter().filter(|t|!matches!(t.kind, TokenKind::Whitespace(_)));
+    let toks = omitted_spaces(indented_toks);
 
     let mut parser = Parser::new(toks);
     let vardecl = parser.parse_var_decl().unwrap();
