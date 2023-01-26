@@ -50,9 +50,20 @@ pub enum Keyword {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword(Keyword),
     Identifier,
+    Operator(Operator),
+    CompoundOperator(Operator),
     Punctuation,
     Whitespace(u32),
     Indent,

@@ -13,6 +13,17 @@ pub struct TokenStream<'a> {
 }
 
 pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
+    fn string_to_op(string: &str) -> Operator {
+        match string {
+            "+" => Operator::Add,
+            "-" => Operator::Sub,
+            "*" => Operator::Mul,
+            "/" => Operator::Div,
+            "%" => Operator::Mod,
+            _ => unreachable!(),
+        }
+    }
+
     let tokenizer_rules: Vec<Box<dyn TokenizerRule>> = vec![
         RegexTokenizerRule::new_box(
             Regex::new(r"^(let|while)").unwrap(),
@@ -62,7 +73,23 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^-=|\+=|[><;=:]").unwrap(),
+            Regex::new(r"^[-\+\\*%]=").unwrap(),
+            Box::new(|captured, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::CompoundOperator(string_to_op(&captured[..captured.len()-1])),
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[-\+\\*%]").unwrap(),
+            Box::new(|captured, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::Operator(string_to_op(captured)),
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^[=;:]").unwrap(),
             Box::new(|_, span, loc| Token {
                 loc,
                 span,
