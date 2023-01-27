@@ -66,12 +66,19 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Punctuation {
+    Colon,
+    Equals,
+    Semicolon,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword(Keyword),
     Identifier(String),
     Operator(Operator),
     CompoundOperator(Operator),
-    Punctuation,
+    Punctuation(Punctuation),
     Whitespace(u32),
     Indent,
     Dendent,

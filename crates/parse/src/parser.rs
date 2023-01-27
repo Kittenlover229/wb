@@ -1,6 +1,6 @@
-use lex::{Keyword, SourceLocation, SourceObject, Token, TokenKind};
+use lex::{Keyword, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
-use crate::ast::{IntegerLiteral, Statement, VarDeclStmt, VarDeclStatement};
+use crate::ast::{IntegerLiteral, Statement, VarDeclStatement, VarDeclStmt};
 
 pub struct Parser {
     cursor: usize,
@@ -92,19 +92,17 @@ impl Parser {
         let source_span_begin = token.source_span().0;
         let loc = token.source_location();
 
-        let varname = (self.eat::<String>(|token| {
-            match token {
-                Token {
-                    kind: TokenKind::Identifier(string),
-                    ..
-                } => Ok(string.to_owned()),
-                token => Err(ParserFault {
-                    loc: token.source_location(),
-                }),
-            }
+        let varname = (self.eat::<String>(|token| match token {
+            Token {
+                kind: TokenKind::Identifier(string),
+                ..
+            } => Ok(string.to_owned()),
+            token => Err(ParserFault {
+                loc: token.source_location(),
+            }),
         }))?;
 
-        self.eat_variant(TokenKind::Punctuation)?;
+        self.eat_if(|token| matches!(token.kind, TokenKind::Punctuation(Punctuation::Equals)))?;
 
         let rhs = self.parse_integer()?;
         let source_span_end = rhs.source_span().1;
