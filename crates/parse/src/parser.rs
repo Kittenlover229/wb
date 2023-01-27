@@ -79,8 +79,8 @@ impl Parser {
                 Ok(good) => return Ok(good),
                 Err(_err) => {
                     self.cursor = cursor;
-                    continue
-                },
+                    continue;
+                }
             }
         }
 
@@ -101,6 +101,17 @@ impl Parser {
         results
     }
 
+    fn one_or_more<T>(&mut self, parser: fn(&mut Self) -> ParserResult<T>) -> ParserResult<Vec<T>> {
+        match parser(self) {
+            Ok(first) => {
+                let mut results = vec![first];
+                results.extend(self.none_or_more(parser));
+                Ok(results)
+            }
+            Err(err) => Err(err),
+        }
+    }
+
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
         self.one_of(&[
             |parser| Ok(WhileStmt(parser.parse_while()?)),
@@ -109,12 +120,11 @@ impl Parser {
                 parser.eat_variant(TokenKind::Newline)?;
                 Ok(ret)
             },
-            |parser| 
-            {
+            |parser| {
                 let ret = Ok(ExpressionStmt(parser.parse_expression()?))?;
                 parser.eat_variant(TokenKind::Newline)?;
                 Ok(ret)
-            }
+            },
         ])
     }
 
@@ -233,7 +243,7 @@ impl Parser {
     }
 
     pub fn parse_stmt_block(&mut self) -> ParserResult<StatementBlock> {
-        let stmts = self.none_or_more(Parser::parse_stmt);
+        let stmts = self.one_or_more(Parser::parse_stmt)?;
 
         if !stmts.is_empty() {
             // TODO: refactor the unwraps
