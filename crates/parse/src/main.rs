@@ -21,11 +21,11 @@ fn main() {
     let toks = omitted_spaces(indented_toks);
 
     let mut parser = Parser::new(toks);
-    let stmt = parser.parse_stmt().unwrap();
+    let block = parser.parse_stmts().unwrap();
 
     let mut visitor = AstGraphvizVisualizer::default();
-    visitor.visit_statement(&stmt);
+    visitor.visit_statement_block(&block);
     visitor.dump(&mut fs::File::create("out.dot").unwrap()).unwrap();
 
-    println!("{stmt:?}")
+    println!("{block:?}")
 }

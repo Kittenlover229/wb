@@ -1,7 +1,8 @@
-use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
+use lex::{Keyword, Operator, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
-    BinaryExpression, Expression, IntegerLiteral, Statement, VarDeclStatement, VarDeclStmt,
+    BinaryExpression, Expression, IntegerLiteral, NameDeclarationStatement, NameExpression,
+    Statement, NameDeclStmt, StatementBlock,
 };
 
 pub struct Parser {
@@ -23,6 +24,7 @@ pub fn precedence_of(op: &Operator) -> u8 {
         Mul | Div | Mod => 5,
         Add | Sub => 6,
         Greater | Less => 9,
+        Equals => 10,
     }
 }
 
@@ -36,12 +38,6 @@ impl Parser {
 
     fn current(&self) -> &Token {
         &self.tokens[self.cursor]
-    }
-
-    fn peek_and_eat(&mut self) -> &Token {
-        let ret = &self.tokens[self.cursor];
-        self.cursor += 1;
-        return ret;
     }
 
     fn eat_if(&mut self, pred: impl FnOnce(&Token) -> bool) -> ParserResult<&Token> {
@@ -89,39 +85,39 @@ impl Parser {
         })
     }
 
+    fn none_or_more<T>(&mut self, parser: fn(&mut Self) -> ParserResult<T>) -> Vec<T> {
+        let mut results = vec![];
+        while let Ok(parsed) = parser(self) {
+            results.push(parsed);
+        }
+        results
+    }
+
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
         self.one_of(&[|parser| {
             let vardecl = parser.parse_var_decl()?;
             parser.eat_variant(TokenKind::Newline)?;
-            Ok(VarDeclStmt(vardecl))
+            Ok(NameDeclStmt(vardecl))
         }])
     }
 
     /// WIP: this doesn't handle errors at all, but it hopes that it works
-    pub fn parse_var_decl(&mut self) -> ParserResult<VarDeclStatement> {
+    pub fn parse_var_decl(&mut self) -> ParserResult<NameDeclarationStatement> {
         let token = self.eat_if(|t| t.kind == TokenKind::Keyword(Keyword::Let))?;
         let source_span_begin = token.source_span().0;
         let loc = token.source_location();
 
-        let varname = (self.eat::<String>(|token| match token {
-            Token {
-                kind: TokenKind::Identifier(string),
-                ..
-            } => Ok(string.to_owned()),
-            token => Err(ParserFault {
-                loc: token.source_location(),
-            }),
-        }))?;
+        let varname = self.parse_name()?;
 
-        self.eat_if(|token| matches!(token.kind, TokenKind::Punctuation(Punctuation::Equals)))?;
+        self.eat_if(|token| matches!(token.kind, TokenKind::Operator(Operator::Equals)))?;
 
         let rhs = self.parse_expression()?;
         let source_span_end = rhs.source_span().1;
 
-        Ok(VarDeclStatement {
+        Ok(NameDeclarationStatement {
             span: (source_span_begin, source_span_end),
             rhs: rhs,
-            varname,
+            name: varname,
             loc,
         })
     }
@@ -131,7 +127,10 @@ impl Parser {
     }
 
     pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
-        self.parse_integer().map(IntegerLiteral)
+        self.one_of(&[
+            |parser| parser.parse_integer().map(IntegerLiteral),
+            |parser| parser.parse_name().map(NameExpression),
+        ])
     }
 
     pub fn parse_binop_expr(&mut self) -> ParserResult<Expression> {
@@ -190,6 +189,37 @@ impl Parser {
         let expr = output_stack.pop().unwrap();
 
         Ok(expr)
+    }
+
+    pub fn parse_stmts(&mut self) -> ParserResult<StatementBlock> {
+        let stmts = self.none_or_more(Parser::parse_stmt);
+
+        if !stmts.is_empty() {
+            // TODO: refactor the unwraps
+            let loc = stmts.first().unwrap().source_location();
+            let begin_span = stmts.first().unwrap().source_span().0;
+            let end_span = stmts.last().unwrap().source_span().1;
+
+            Ok(StatementBlock { loc, span: (begin_span, end_span), statements: stmts })
+        } else {
+            Err(ParserFault { loc: self.current().source_location() })
+        }
+    }
+
+    pub fn parse_name(&mut self) -> ParserResult<NameExpression> {
+        self.eat::<NameExpression>(|token| match token {
+            Token {
+                kind: TokenKind::Identifier(identifier),
+                ..
+            } => Ok(NameExpression {
+                loc: token.source_location(),
+                span: token.source_span(),
+                identifier: identifier.to_owned(),
+            }),
+            token => Err(ParserFault {
+                loc: token.source_location(),
+            }),
+        })
     }
 
     pub fn parse_integer(&mut self) -> ParserResult<IntegerLiteral> {

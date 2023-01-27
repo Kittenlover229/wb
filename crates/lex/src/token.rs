@@ -56,6 +56,7 @@ pub enum Keyword {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
+    Equals,
     Add,
     Sub,
     Mul,
@@ -67,14 +68,17 @@ pub enum Operator {
 
 impl Into<&str> for Operator {
     fn into(self) -> &'static str {
+        use Operator::*;
+
         match self {
-            Operator::Add => "+",
-            Operator::Sub => "-",
-            Operator::Mul => "*",
-            Operator::Div => "/",
-            Operator::Mod => "%",
-            Operator::Greater => ">",
-            Operator::Less => "<",
+            Add => "+",
+            Sub => "-",
+            Mul => "*",
+            Div => "/",
+            Mod => "%",
+            Greater => ">",
+            Less => "<",
+            Equals => "=",
         }
     }
 }
@@ -82,7 +86,6 @@ impl Into<&str> for Operator {
 #[derive(Debug, PartialEq)]
 pub enum Punctuation {
     Colon,
-    Equals,
     Semicolon,
 }
 
@@ -98,6 +101,7 @@ pub enum TokenKind {
     Dendent,
     Newline,
     Integer(String),
+    End,
 }
 
 #[derive(Debug)]

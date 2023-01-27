@@ -1,25 +1,58 @@
-use lex::{SourceLocation, SourceObject, SourceSpan, Operator};
+use lex::{Operator, SourceLocation, SourceObject, SourceSpan};
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    VarDeclStmt(VarDeclStatement),
+    NameDeclStmt(NameDeclarationStatement),
 }
 
 pub use Statement::*;
 
+impl SourceObject for Statement {
+    fn source_location(&self) -> SourceLocation {
+        match self {
+            NameDeclStmt(stmt) => stmt.source_location(),
+        }
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        match self {
+            NameDeclStmt(stmt) => stmt.source_span(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct VarDeclStatement {
-    pub varname: String,
+pub struct NameDeclarationStatement {
+    pub name: NameExpression,
     pub rhs: Expression,
 
     pub(crate) span: SourceSpan,
     pub(crate) loc: SourceLocation,
 }
 
+impl SourceObject for NameDeclarationStatement {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StatementBlock {
+    pub(crate) loc: SourceLocation,
+    pub(crate) span: SourceSpan,
+
+    pub statements: Vec<Statement>,
+}
+
 #[derive(Debug, Clone)]
 pub enum Expression {
     IntegerLiteral(IntegerLiteral),
     BinaryExpression(BinaryExpression),
+    NameExpression(NameExpression),
 }
 
 impl SourceObject for Expression {
@@ -27,6 +60,7 @@ impl SourceObject for Expression {
         match self {
             IntegerLiteral(lit) => lit.source_location(),
             BinaryExpression(binexpr) => binexpr.source_location(),
+            NameExpression(nexpr) => nexpr.source_location(),
         }
     }
 
@@ -34,6 +68,7 @@ impl SourceObject for Expression {
         match self {
             IntegerLiteral(lit) => lit.source_span(),
             BinaryExpression(binexpr) => binexpr.source_span(),
+            NameExpression(nexpr) => nexpr.source_span(),
         }
     }
 }
@@ -69,6 +104,24 @@ pub struct BinaryExpression {
 }
 
 impl SourceObject for BinaryExpression {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NameExpression {
+    pub span: SourceSpan,
+    pub loc: SourceLocation,
+
+    pub(crate) identifier: String,
+}
+
+impl SourceObject for NameExpression {
     fn source_location(&self) -> SourceLocation {
         self.loc
     }

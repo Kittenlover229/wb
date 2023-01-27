@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub struct TokenStream<'a> {
-    pub input: &'a str,
+    pub input: Option<&'a str>,
     pub loc: SourceLocation,
 
     tokenizer_rules: Vec<Box<dyn TokenizerRule>>,
@@ -22,6 +22,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             "%" => Operator::Mod,
             ">" => Operator::Greater,
             "<" => Operator::Less,
+            "=" => Operator::Equals,
             _ => unreachable!(),
         }
     }
@@ -83,7 +84,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[-\+\\*%><]").unwrap(),
+            Regex::new(r"^[-\+\\*=%><]").unwrap(),
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
@@ -91,22 +92,21 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
-            Regex::new(r"^[=;:]").unwrap(),
+            Regex::new(r"^[;:]").unwrap(),
             Box::new(|capture, span, loc| Token {
                 loc,
                 span,
                 kind: TokenKind::Punctuation(match capture {
                     ":" => Punctuation::Colon,
-                    "=" => Punctuation::Equals,
                     ";" => Punctuation::Semicolon,
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }),
             }),
         ),
     ];
 
     TokenStream {
-        input,
+        input: Some(input),
         loc: Default::default(),
         tokenizer_rules,
     }
@@ -116,18 +116,32 @@ impl<'a> Iterator for TokenStream<'a> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        for rule in &self.tokenizer_rules {
-            match rule.try_tokenize(self.input, self.loc) {
-                Some((tok, rest, loc)) => {
-                    let ret = Some(tok);
-                    self.input = rest;
-                    self.loc = loc;
-                    return ret;
+        match self.input {
+            Some(input) => {
+                for rule in &self.tokenizer_rules {
+                    match rule.try_tokenize(input, self.loc) {
+                        Some((tok, rest, loc)) => {
+                            let ret = Some(tok);
+                            self.input = Some(rest);
+                            self.loc = loc;
+                            return ret;
+                        }
+                        None => continue,
+                    }
                 }
-                None => continue,
-            }
-        }
 
-        None
+                if input.len() == 0 {
+                    self.input = None;
+                    Some(Token {
+                        loc: self.loc,
+                        span: (self.loc.index, self.loc.index),
+                        kind: TokenKind::End,
+                    })
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
     }
 }

@@ -1,4 +1,4 @@
-use std::io::{Write, self};
+use std::io::{self, Write};
 
 use crate::visitor::Visitor;
 
@@ -35,9 +35,9 @@ impl AstGraphvizVisualizer {
 }
 
 impl Visitor<i32> for AstGraphvizVisualizer {
-    fn visit_vardecl(&mut self, vardeclstmt: &crate::ast::VarDeclStatement) -> i32 {
+    fn visit_vardecl(&mut self, vardeclstmt: &crate::ast::NameDeclarationStatement) -> i32 {
         let this = self.new_node("Variable Declaration");
-        let varname = self.new_node(&vardeclstmt.varname);
+        let varname = self.visit_name(&vardeclstmt.name);
         let rhs = self.visit_expression(&vardeclstmt.rhs);
 
         self.new_edge(this, varname, "name");
@@ -54,9 +54,24 @@ impl Visitor<i32> for AstGraphvizVisualizer {
         let this = self.new_node(expr.operator.into());
         let lhs = self.visit_expression(&expr.lhs);
         let rhs = self.visit_expression(&expr.rhs);
-        
+
         self.new_edge(this, lhs, "lhs");
         self.new_edge(this, rhs, "rhs");
+
+        this
+    }
+
+    fn visit_name(&mut self, name: &crate::ast::NameExpression) -> i32 {
+        self.new_node(&name.identifier)
+    }
+
+    fn visit_statement_block(&mut self, block: &crate::ast::StatementBlock) -> i32 {
+        let this = self.new_node("Block");
+
+        for (i, stmt) in block.statements.iter().enumerate() {
+            let stmt = self.visit_statement(stmt);
+            self.new_edge(this, stmt, (i + 1).to_string().as_str());
+        }
 
         this
     }
