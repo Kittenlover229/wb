@@ -1,6 +1,8 @@
-use lex::{Keyword, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
+use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
-use crate::ast::{IntegerLiteral, Statement, VarDeclStatement, VarDeclStmt};
+use crate::ast::{
+    BinaryExpression, Expression, IntegerLiteral, Statement, VarDeclStatement, VarDeclStmt,
+};
 
 pub struct Parser {
     cursor: usize,
@@ -13,6 +15,16 @@ pub struct ParserFault {
 }
 
 pub type ParserResult<T> = Result<T, ParserFault>;
+
+pub fn precedence_of(op: &Operator) -> u8 {
+    use Operator::*;
+
+    match op {
+        Mul | Div | Mod => 5,
+        Add | Sub => 6,
+        Greater | Less => 9,
+    }
+}
 
 impl Parser {
     pub fn new(tokens: impl IntoIterator<Item = Token>) -> Self {
@@ -64,10 +76,7 @@ impl Parser {
         }
     }
 
-    fn one_of(
-        &mut self,
-        parsers: &[fn(&mut Self) -> ParserResult<Statement>],
-    ) -> ParserResult<Statement> {
+    fn one_of<T>(&mut self, parsers: &[fn(&mut Self) -> ParserResult<T>]) -> ParserResult<T> {
         for parser in parsers {
             match parser(self) {
                 Ok(good) => return Ok(good),
@@ -75,7 +84,9 @@ impl Parser {
             }
         }
 
-        todo!();
+        Err(ParserFault {
+            loc: self.current().source_location(),
+        })
     }
 
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
@@ -104,15 +115,81 @@ impl Parser {
 
         self.eat_if(|token| matches!(token.kind, TokenKind::Punctuation(Punctuation::Equals)))?;
 
-        let rhs = self.parse_integer()?;
+        let rhs = self.parse_expression()?;
         let source_span_end = rhs.source_span().1;
 
         Ok(VarDeclStatement {
             span: (source_span_begin, source_span_end),
-            rhs: IntegerLiteral(rhs),
+            rhs: rhs,
             varname,
             loc,
         })
+    }
+
+    pub fn parse_expression(&mut self) -> ParserResult<Expression> {
+        self.one_of(&[Parser::parse_binop_expr, Parser::parse_primary_expression])
+    }
+
+    pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
+        self.parse_integer().map(IntegerLiteral)
+    }
+
+    pub fn parse_binop_expr(&mut self) -> ParserResult<Expression> {
+        let mut output_stack: Vec<Expression> = vec![];
+        let mut operator_stack: Vec<Operator> = vec![];
+
+        let primary_starter = self.parse_primary_expression()?;
+        output_stack.push(primary_starter);
+
+        while let Ok(binop) = self.eat_if(Token::is_binop) {
+            let op = match &binop.kind {
+                TokenKind::Operator(op) => *op,
+                _ => unreachable!(),
+            };
+
+            if !operator_stack.is_empty() {
+                if precedence_of(&op) >= precedence_of(&operator_stack.last().unwrap()) {
+                    let op = operator_stack.pop().unwrap();
+                    let rhs = output_stack.pop().unwrap();
+                    let lhs = output_stack.pop().unwrap();
+
+                    let span = (lhs.source_span().0, rhs.source_span().1);
+                    let loc = lhs.source_location();
+
+                    output_stack.push(Expression::BinaryExpression(BinaryExpression {
+                        span,
+                        loc,
+                        operator: op,
+                        rhs: Box::new(rhs),
+                        lhs: Box::new(lhs),
+                    }))
+                }
+            }
+
+            operator_stack.push(op);
+            output_stack.push(self.parse_primary_expression()?);
+        }
+
+        while !operator_stack.is_empty() {
+            let op = operator_stack.pop().unwrap();
+            let rhs = output_stack.pop().unwrap();
+            let lhs = output_stack.pop().unwrap();
+
+            let span = (lhs.source_span().0, rhs.source_span().1);
+            let loc = lhs.source_location();
+
+            output_stack.push(Expression::BinaryExpression(BinaryExpression {
+                operator: op,
+                span,
+                loc,
+                rhs: Box::new(rhs),
+                lhs: Box::new(lhs),
+            }))
+        }
+
+        let expr = output_stack.pop().unwrap();
+
+        Ok(expr)
     }
 
     pub fn parse_integer(&mut self) -> ParserResult<IntegerLiteral> {

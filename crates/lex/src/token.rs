@@ -54,7 +54,7 @@ pub enum Keyword {
     While,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
     Add,
     Sub,
@@ -63,6 +63,20 @@ pub enum Operator {
     Mod,
     Greater,
     Less,
+}
+
+impl Into<&str> for Operator {
+    fn into(self) -> &'static str {
+        match self {
+            Operator::Add => "+",
+            Operator::Sub => "-",
+            Operator::Mul => "*",
+            Operator::Div => "/",
+            Operator::Mod => "%",
+            Operator::Greater => ">",
+            Operator::Less => "<",
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -91,6 +105,15 @@ pub struct Token {
     pub loc: SourceLocation,
     pub span: SourceSpan,
     pub kind: TokenKind,
+}
+
+impl Token {
+    pub fn is_binop(&self) -> bool {
+        match self.kind {
+            TokenKind::Operator(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl SourceObject for Token {

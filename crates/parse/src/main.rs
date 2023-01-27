@@ -5,7 +5,6 @@ mod graphviz;
 
 use graphviz::AstGraphvizVisualizer;
 use parser::*;
-use ast::*;
 use lex::*;
 use visitor::Visitor;
 use std::fs;
@@ -27,6 +26,6 @@ fn main() {
     let mut visitor = AstGraphvizVisualizer::default();
     visitor.visit_statement(&stmt);
     visitor.dump(&mut fs::File::create("out.dot").unwrap()).unwrap();
-    
+
     println!("{stmt:?}")
 }

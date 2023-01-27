@@ -49,4 +49,15 @@ impl Visitor<i32> for AstGraphvizVisualizer {
     fn visit_integer_literal(&mut self, integer: &crate::ast::IntegerLiteral) -> i32 {
         self.new_node(&integer.number)
     }
+
+    fn visit_binary_expr(&mut self, expr: &crate::ast::BinaryExpression) -> i32 {
+        let this = self.new_node(expr.operator.into());
+        let lhs = self.visit_expression(&expr.lhs);
+        let rhs = self.visit_expression(&expr.rhs);
+        
+        self.new_edge(this, lhs, "lhs");
+        self.new_edge(this, rhs, "rhs");
+
+        this
+    }
 }
