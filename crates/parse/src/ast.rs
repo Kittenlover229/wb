@@ -92,14 +92,14 @@ pub struct IntegerLiteral {
     pub span: SourceSpan,
     pub loc: SourceLocation,
 
-    pub(crate) number: String,
+    pub number: String,
 }
 
 #[derive(Debug, Clone, SourceObject)]
 pub struct BinaryExpression {
-    pub(crate) operator: Operator,
-    pub(crate) lhs: Box<Expression>,
-    pub(crate) rhs: Box<Expression>,
+    pub operator: Operator,
+    pub lhs: Box<Expression>,
+    pub rhs: Box<Expression>,
 
     pub(crate) span: SourceSpan,
     pub(crate) loc: SourceLocation,
@@ -107,10 +107,10 @@ pub struct BinaryExpression {
 
 #[derive(Debug, Clone, SourceObject)]
 pub struct NameExpression {
-    pub span: SourceSpan,
-    pub loc: SourceLocation,
+    pub(crate) span: SourceSpan,
+    pub(crate) loc: SourceLocation,
 
-    pub(crate) identifier: String,
+    pub identifier: String,
 }
 
 #[derive(Debug, Clone, SourceObject)]
