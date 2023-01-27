@@ -14,14 +14,13 @@ fn main() {
     let tokens = try_tokenize(contents.as_str());
     let indented_toks = indented_tokens(tokens);
 
-    for tok in &indented_toks {
-        println!("{tok:?}");
+    let toks: Vec<Token> = omitted_spaces(indented_toks).into_iter().collect();
+    for (i, tok) in toks.iter().enumerate() {
+        println!("{i}: {tok:?}");
     }
-
-    let toks = omitted_spaces(indented_toks);
-
+    
     let mut parser = Parser::new(toks);
-    let block = parser.parse_stmts().unwrap();
+    let block = parser.parse_stmt_block().unwrap();
 
     let mut visitor = AstGraphvizVisualizer::default();
     visitor.visit_statement_block(&block);

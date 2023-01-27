@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 lex = { path = "../lex" }
 dot = "0.1.4"
+anyhow = { version = "1.0.66", features = ["backtrace"] }

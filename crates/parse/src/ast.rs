@@ -3,6 +3,7 @@ use lex::{Operator, SourceLocation, SourceObject, SourceSpan};
 #[derive(Debug, Clone)]
 pub enum Statement {
     NameDeclStmt(NameDeclarationStatement),
+    WhileStmt(WhileStatement),
     ExpressionStmt(Expression),
 }
 
@@ -13,6 +14,7 @@ impl SourceObject for Statement {
         match self {
             NameDeclStmt(stmt) => stmt.source_location(),
             ExpressionStmt(stmt) => stmt.source_location(),
+            WhileStmt(stmt) => stmt.source_location(),
         }
     }
 
@@ -20,6 +22,7 @@ impl SourceObject for Statement {
         match self {
             NameDeclStmt(stmt) => stmt.source_span(),
             ExpressionStmt(stmt) => stmt.source_span(),
+            WhileStmt(stmt) => stmt.source_span(),
         }
     }
 }
@@ -44,11 +47,40 @@ impl SourceObject for NameDeclarationStatement {
 }
 
 #[derive(Debug, Clone)]
+pub struct WhileStatement {
+    pub(crate) loc: SourceLocation,
+    pub(crate) span: SourceSpan,
+
+    pub pred: Expression,
+    pub body: StatementBlock,
+}
+
+impl SourceObject for WhileStatement {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct StatementBlock {
     pub(crate) loc: SourceLocation,
     pub(crate) span: SourceSpan,
 
     pub statements: Vec<Statement>,
+}
+
+impl SourceObject for StatementBlock {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
 }
 
 #[derive(Debug, Clone)]

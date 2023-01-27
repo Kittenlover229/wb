@@ -76,4 +76,15 @@ impl Visitor<i32> for AstGraphvizVisualizer {
 
         this
     }
+
+    fn visit_while(&mut self, w: &crate::ast::WhileStatement) -> i32 {
+        let this = self.new_node("While");
+        let pred = self.visit_expression(&w.pred);
+        let body = self.visit_statement_block(&w.body);
+
+        self.new_edge(this, pred, "pred");
+        self.new_edge(this, body, "body");
+
+        this
+    }
 }

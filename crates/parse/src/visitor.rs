@@ -1,6 +1,6 @@
 use crate::ast::{
     BinaryExpression, Expression, IntegerLiteral, NameDeclarationStatement, NameExpression,
-    Statement, StatementBlock,
+    Statement, StatementBlock, WhileStatement,
 };
 
 pub trait Visitor<T = ()> {
@@ -8,6 +8,7 @@ pub trait Visitor<T = ()> {
         match stmt {
             Statement::NameDeclStmt(v) => self.visit_vardecl(v),
             Statement::ExpressionStmt(e) => self.visit_expression(e),
+            Statement::WhileStmt(w) => self.visit_while(w),
         }
     }
 
@@ -19,6 +20,7 @@ pub trait Visitor<T = ()> {
         }
     }
 
+    fn visit_while(&mut self, w: &WhileStatement) -> T;
     fn visit_statement_block(&mut self, block: &StatementBlock) -> T;
     fn visit_name(&mut self, name: &NameExpression) -> T;
     fn visit_vardecl(&mut self, vardeclstmt: &NameDeclarationStatement) -> T;

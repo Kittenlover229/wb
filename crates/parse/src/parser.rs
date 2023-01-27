@@ -1,8 +1,8 @@
-use lex::{Keyword, Operator, SourceLocation, SourceObject, Token, TokenKind};
+use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
     BinaryExpression, Expression, ExpressionStmt, IntegerLiteral, NameDeclStmt,
-    NameDeclarationStatement, NameExpression, Statement, StatementBlock,
+    NameDeclarationStatement, NameExpression, Statement, StatementBlock, WhileStatement, WhileStmt,
 };
 
 pub struct Parser {
@@ -73,10 +73,14 @@ impl Parser {
     }
 
     fn one_of<T>(&mut self, parsers: &[fn(&mut Self) -> ParserResult<T>]) -> ParserResult<T> {
+        let cursor = self.cursor;
         for parser in parsers {
             match parser(self) {
                 Ok(good) => return Ok(good),
-                Err(_err) => continue,
+                Err(_err) => {
+                    self.cursor = cursor;
+                    continue
+                },
             }
         }
 
@@ -87,28 +91,61 @@ impl Parser {
 
     fn none_or_more<T>(&mut self, parser: fn(&mut Self) -> ParserResult<T>) -> Vec<T> {
         let mut results = vec![];
+        let mut cursor = self.cursor;
         while let Ok(parsed) = parser(self) {
             results.push(parsed);
+            cursor = self.cursor;
         }
+        self.cursor = cursor;
+
         results
     }
 
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
         self.one_of(&[
+            |parser| Ok(WhileStmt(parser.parse_while()?)),
             |parser| {
-                let vardecl = parser.parse_var_decl()?;
+                let ret = Ok(NameDeclStmt(parser.parse_var_decl()?))?;
                 parser.eat_variant(TokenKind::Newline)?;
-                Ok(NameDeclStmt(vardecl))
+                Ok(ret)
             },
-            |parser| Ok(ExpressionStmt(parser.parse_expression()?)),
+            |parser| 
+            {
+                let ret = Ok(ExpressionStmt(parser.parse_expression()?))?;
+                parser.eat_variant(TokenKind::Newline)?;
+                Ok(ret)
+            }
         ])
+    }
+
+    pub fn parse_while(&mut self) -> ParserResult<WhileStatement> {
+        let while_keyword = self.eat_variant(TokenKind::Keyword(Keyword::While))?;
+        let span_begin = while_keyword.source_span().0;
+        let loc = while_keyword.source_location();
+
+        let pred = self.parse_expression()?;
+
+        self.eat_variant(TokenKind::Punctuation(Punctuation::Colon))?;
+        self.eat_variant(TokenKind::Indent)?;
+
+        let body = self.parse_stmt_block()?;
+        let span_end = body.span.1;
+
+        self.eat_variant(TokenKind::Dendent)?;
+
+        Ok(WhileStatement {
+            pred,
+            body,
+            loc,
+            span: (span_begin, span_end),
+        })
     }
 
     /// WIP: this doesn't handle errors at all, but it hopes that it works
     pub fn parse_var_decl(&mut self) -> ParserResult<NameDeclarationStatement> {
-        let token = self.eat_if(|t| t.kind == TokenKind::Keyword(Keyword::Let))?;
-        let source_span_begin = token.source_span().0;
-        let loc = token.source_location();
+        let let_keyword = self.eat_variant(TokenKind::Keyword(Keyword::Let))?;
+        let source_span_begin = let_keyword.source_span().0;
+        let loc = let_keyword.source_location();
 
         let varname = self.parse_name()?;
 
@@ -126,7 +163,7 @@ impl Parser {
     }
 
     pub fn parse_expression(&mut self) -> ParserResult<Expression> {
-        self.one_of(&[Parser::parse_binop_expr, Parser::parse_primary_expression])
+        self.parse_binop_expr()
     }
 
     pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
@@ -194,7 +231,7 @@ impl Parser {
         Ok(expr)
     }
 
-    pub fn parse_stmts(&mut self) -> ParserResult<StatementBlock> {
+    pub fn parse_stmt_block(&mut self) -> ParserResult<StatementBlock> {
         let stmts = self.none_or_more(Parser::parse_stmt);
 
         if !stmts.is_empty() {
