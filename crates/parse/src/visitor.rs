@@ -7,6 +7,7 @@ pub trait Visitor<T = ()> {
     fn visit_statement(&mut self, stmt: &Statement) -> T {
         match stmt {
             Statement::NameDeclStmt(v) => self.visit_vardecl(v),
+            Statement::ExpressionStmt(e) => self.visit_expression(e),
         }
     }
 

@@ -1,3 +1,4 @@
 let x = 0
 let y = 1
 let d = x = y
+x = x - 1

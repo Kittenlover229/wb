@@ -3,6 +3,7 @@ use lex::{Operator, SourceLocation, SourceObject, SourceSpan};
 #[derive(Debug, Clone)]
 pub enum Statement {
     NameDeclStmt(NameDeclarationStatement),
+    ExpressionStmt(Expression),
 }
 
 pub use Statement::*;
@@ -11,12 +12,14 @@ impl SourceObject for Statement {
     fn source_location(&self) -> SourceLocation {
         match self {
             NameDeclStmt(stmt) => stmt.source_location(),
+            ExpressionStmt(stmt) => stmt.source_location(),
         }
     }
 
     fn source_span(&self) -> SourceSpan {
         match self {
             NameDeclStmt(stmt) => stmt.source_span(),
+            ExpressionStmt(stmt) => stmt.source_span(),
         }
     }
 }

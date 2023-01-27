@@ -1,8 +1,8 @@
 use lex::{Keyword, Operator, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
-    BinaryExpression, Expression, IntegerLiteral, NameDeclarationStatement, NameExpression,
-    Statement, NameDeclStmt, StatementBlock,
+    BinaryExpression, Expression, ExpressionStmt, IntegerLiteral, NameDeclStmt,
+    NameDeclarationStatement, NameExpression, Statement, StatementBlock,
 };
 
 pub struct Parser {
@@ -94,11 +94,14 @@ impl Parser {
     }
 
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
-        self.one_of(&[|parser| {
-            let vardecl = parser.parse_var_decl()?;
-            parser.eat_variant(TokenKind::Newline)?;
-            Ok(NameDeclStmt(vardecl))
-        }])
+        self.one_of(&[
+            |parser| {
+                let vardecl = parser.parse_var_decl()?;
+                parser.eat_variant(TokenKind::Newline)?;
+                Ok(NameDeclStmt(vardecl))
+            },
+            |parser| Ok(ExpressionStmt(parser.parse_expression()?)),
+        ])
     }
 
     /// WIP: this doesn't handle errors at all, but it hopes that it works
@@ -200,9 +203,15 @@ impl Parser {
             let begin_span = stmts.first().unwrap().source_span().0;
             let end_span = stmts.last().unwrap().source_span().1;
 
-            Ok(StatementBlock { loc, span: (begin_span, end_span), statements: stmts })
+            Ok(StatementBlock {
+                loc,
+                span: (begin_span, end_span),
+                statements: stmts,
+            })
         } else {
-            Err(ParserFault { loc: self.current().source_location() })
+            Err(ParserFault {
+                loc: self.current().source_location(),
+            })
         }
     }
 
