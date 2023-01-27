@@ -20,7 +20,8 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
             (
                 Token {
                     kind: TokenKind::Newline,
-                    ..
+                    span: newline_span,
+                    loc: newline_loc,
                 },
                 Some(Token {
                     kind: TokenKind::Whitespace(spaces),
@@ -29,6 +30,12 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
                     ..
                 }),
             ) => {
+                out.push(Token {
+                    loc: newline_loc,
+                    span: newline_span,
+                    kind: TokenKind::Newline,
+                });
+
                 let indent_spaces = spaces / 4;
                 if indent_spaces == indentation + 1 {
                     indentation = indent_spaces;
@@ -63,9 +70,13 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
                     span,
                     loc,
                 },
-                Some(next)
+                Some(next),
             ) => {
-                out.push(Token {kind: TokenKind::Newline, span, loc});
+                out.push(Token {
+                    kind: TokenKind::Newline,
+                    span,
+                    loc,
+                });
                 for _ in 0..indentation {
                     out.push(Token {
                         kind: TokenKind::Dendent,
@@ -85,7 +96,11 @@ pub fn indented_tokens<'a>(mut iterator: impl Iterator<Item = Token>) -> Vec<Tok
                 },
                 None,
             ) => {
-                out.push(Token {kind: TokenKind::Newline, span, loc});
+                out.push(Token {
+                    kind: TokenKind::Newline,
+                    span,
+                    loc,
+                });
                 for _ in 0..indentation {
                     out.push(Token {
                         kind: TokenKind::Dendent,

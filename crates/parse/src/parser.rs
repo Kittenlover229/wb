@@ -126,6 +126,7 @@ impl Parser {
         let pred = self.parse_expression()?;
 
         self.eat_variant(TokenKind::Punctuation(Punctuation::Colon))?;
+        self.eat_variant(TokenKind::Newline)?;
         self.eat_variant(TokenKind::Indent)?;
 
         let body = self.parse_stmt_block()?;
