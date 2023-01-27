@@ -100,6 +100,8 @@ pub enum TokenKind {
     Indent,
     Dendent,
     Newline,
+    LeftParenthese,
+    RightParenthese,
     Integer(String),
     End,
 }

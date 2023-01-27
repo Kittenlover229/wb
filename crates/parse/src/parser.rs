@@ -1,7 +1,7 @@
 use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
-    BinaryExpression, Expression, ExpressionStmt, FunctionApplication, IntegerLiteral,
+    BinaryExpression, Expression, ExpressionStmt, FunctionApplication, Grouping, IntegerLiteral,
     NameDeclStmt, NameDeclarationStatement, NameExpression, Statement, StatementBlock,
     WhileStatement, WhileStmt,
 };
@@ -183,7 +183,23 @@ impl Parser {
             |parser| parser.parse_integer().map(IntegerLiteral),
             |parser| parser.parse_function_application().map(FunctionApplication),
             |parser| parser.parse_name().map(NameExpression),
+            |parser| parser.parse_group().map(Grouping),
         ])
+    }
+
+    pub fn parse_group(&mut self) -> ParserResult<Grouping> {
+        let _first = self.eat_variant(TokenKind::LeftParenthese)?;
+        let span_begin = _first.source_span().0;
+        let loc = _first.source_location();
+        let expr = self.parse_expression()?;
+        let _last = self.eat_variant(TokenKind::RightParenthese)?;
+        let span_end = _last.source_span().1;
+
+        Ok(Grouping {
+            span: (span_begin, span_end),
+            expr: Box::new(expr),
+            loc,
+        })
     }
 
     pub fn parse_function_application(&mut self) -> ParserResult<FunctionApplication> {
@@ -192,6 +208,7 @@ impl Parser {
             parser.one_of(&[
                 |parser| parser.parse_integer().map(IntegerLiteral),
                 |parser| parser.parse_name().map(NameExpression),
+                |parser| parser.parse_group().map(Grouping),
             ])
         })?;
 

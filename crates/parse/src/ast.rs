@@ -88,7 +88,8 @@ pub enum Expression {
     IntegerLiteral(IntegerLiteral),
     BinaryExpression(BinaryExpression),
     NameExpression(NameExpression),
-    FunctionApplication(FunctionApplication)
+    FunctionApplication(FunctionApplication),
+    Grouping(Grouping),
 }
 
 impl SourceObject for Expression {
@@ -98,6 +99,7 @@ impl SourceObject for Expression {
             BinaryExpression(binexpr) => binexpr.source_location(),
             NameExpression(nexpr) => nexpr.source_location(),
             FunctionApplication(func) => func.source_location(),
+            Grouping(group) => group.source_location(),
         }
     }
 
@@ -107,6 +109,7 @@ impl SourceObject for Expression {
             BinaryExpression(binexpr) => binexpr.source_span(),
             NameExpression(nexpr) => nexpr.source_span(),
             FunctionApplication(func) => func.source_span(),
+            Grouping(group) => group.source_span(),
         }
     }
 }
@@ -179,6 +182,24 @@ pub struct FunctionApplication {
 }
 
 impl SourceObject for FunctionApplication {
+    fn source_location(&self) -> SourceLocation {
+        self.loc
+    }
+
+    fn source_span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Grouping {
+    pub(crate) span: SourceSpan,
+    pub(crate) loc: SourceLocation,
+
+    pub expr: Box<Expression>
+}
+
+impl SourceObject for Grouping {
     fn source_location(&self) -> SourceLocation {
         self.loc
     }

@@ -98,4 +98,11 @@ impl Visitor<i32> for AstGraphvizVisualizer {
         }
         this
     }
+
+    fn visit_grouping(&mut self, g: &crate::ast::Grouping) -> i32 {
+        let this = self.new_node("Grouping");
+        let expr = self.visit_expression(&g.expr);
+        self.new_edge(this, expr, "grouped");
+        this
+    }
 }

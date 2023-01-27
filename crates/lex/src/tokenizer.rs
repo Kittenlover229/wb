@@ -68,6 +68,22 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             }),
         ),
         RegexTokenizerRule::new_box(
+            Regex::new(r"^\(").unwrap(),
+            Box::new(|_, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::LeftParenthese,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
+            Regex::new(r"^\)").unwrap(),
+            Box::new(|_, span, loc| Token {
+                loc,
+                span,
+                kind: TokenKind::RightParenthese,
+            }),
+        ),
+        RegexTokenizerRule::new_box(
             Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap(),
             Box::new(|captured, span, loc| Token {
                 loc,
