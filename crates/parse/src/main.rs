@@ -18,6 +18,6 @@ fn main() {
     let toks = omitted_spaces(indented_toks);
 
     let mut parser = Parser::new(toks);
-    let vardecl = parser.parse_var_decl().unwrap();
-    println!("{vardecl:?}")
+    let stmt = parser.parse_stmt().unwrap();
+    println!("{stmt:?}")
 }
