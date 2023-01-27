@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use r#macro::SourceObject;
+
 #[derive(Clone, Copy)]
 pub struct SourceLocation {
     pub index: usize,
@@ -106,7 +108,7 @@ pub enum TokenKind {
     End,
 }
 
-#[derive(Debug)]
+#[derive(Debug, SourceObject)]
 pub struct Token {
     pub loc: SourceLocation,
     pub span: SourceSpan,
@@ -119,15 +121,5 @@ impl Token {
             TokenKind::Operator(_) => true,
             _ => false,
         }
-    }
-}
-
-impl SourceObject for Token {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
     }
 }

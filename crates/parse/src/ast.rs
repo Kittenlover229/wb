@@ -27,7 +27,7 @@ impl SourceObject for Statement {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct NameDeclarationStatement {
     pub name: NameExpression,
     pub rhs: Expression,
@@ -36,17 +36,7 @@ pub struct NameDeclarationStatement {
     pub(crate) loc: SourceLocation,
 }
 
-impl SourceObject for NameDeclarationStatement {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct WhileStatement {
     pub(crate) loc: SourceLocation,
     pub(crate) span: SourceSpan,
@@ -55,32 +45,12 @@ pub struct WhileStatement {
     pub body: StatementBlock,
 }
 
-impl SourceObject for WhileStatement {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct StatementBlock {
     pub(crate) loc: SourceLocation,
     pub(crate) span: SourceSpan,
 
     pub statements: Vec<Statement>,
-}
-
-impl SourceObject for StatementBlock {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -115,8 +85,9 @@ impl SourceObject for Expression {
 }
 
 pub use Expression::*;
+use r#macro::SourceObject;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct IntegerLiteral {
     pub span: SourceSpan,
     pub loc: SourceLocation,
@@ -124,17 +95,7 @@ pub struct IntegerLiteral {
     pub(crate) number: String,
 }
 
-impl SourceObject for IntegerLiteral {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct BinaryExpression {
     pub(crate) operator: Operator,
     pub(crate) lhs: Box<Expression>,
@@ -144,17 +105,7 @@ pub struct BinaryExpression {
     pub(crate) loc: SourceLocation,
 }
 
-impl SourceObject for BinaryExpression {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct NameExpression {
     pub span: SourceSpan,
     pub loc: SourceLocation,
@@ -162,17 +113,7 @@ pub struct NameExpression {
     pub(crate) identifier: String,
 }
 
-impl SourceObject for NameExpression {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct FunctionApplication {
     pub span: SourceSpan,
     pub loc: SourceLocation,
@@ -181,30 +122,10 @@ pub struct FunctionApplication {
     pub args: Vec<Expression>,
 }
 
-impl SourceObject for FunctionApplication {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SourceObject)]
 pub struct Grouping {
     pub(crate) span: SourceSpan,
     pub(crate) loc: SourceLocation,
 
     pub expr: Box<Expression>
-}
-
-impl SourceObject for Grouping {
-    fn source_location(&self) -> SourceLocation {
-        self.loc
-    }
-
-    fn source_span(&self) -> SourceSpan {
-        self.span
-    }
 }

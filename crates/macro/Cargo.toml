@@ -1,0 +1,11 @@
+[package]
+name = "macro"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0.66", features = ["extra-traits"] }
+quote = "1.0.9"
