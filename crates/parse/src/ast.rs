@@ -1,9 +1,5 @@
 use lex::{SourceLocation, SourceSpan, SourceObject};
 
-pub trait AstNode {
-    fn source_location(&self) -> (SourceSpan, SourceLocation);
-}
-
 #[derive(Debug, Clone)]
 pub enum Statement {
     VarDeclStmt(VarDeclStatement),

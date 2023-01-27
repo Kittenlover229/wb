@@ -12,6 +12,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dot"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a74b6c4d4a1cff5f454164363c16b72fa12463ca6b31f4b5f2035a65fa3d5906"
+
+[[package]]
 name = "lex"
 version = "0.0.0"
 dependencies = [
@@ -28,6 +34,7 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 name = "parse"
 version = "0.0.0"
 dependencies = [
+ "dot",
  "lex",
 ]
 
