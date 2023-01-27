@@ -87,4 +87,15 @@ impl Visitor<i32> for AstGraphvizVisualizer {
 
         this
     }
+
+    fn visit_function_application(&mut self, f: &crate::ast::FunctionApplication) -> i32 {
+        let this = self.new_node("Function Applicatcion");
+        let func = self.visit_expression(f.func.as_ref());
+        self.new_edge(this, func, "func");
+        for (i, arg) in f.args.iter().enumerate() {
+            let arg = self.visit_expression(arg);
+            self.new_edge(this, arg, (i + 1).to_string().as_str());
+        }
+        this
+    }
 }

@@ -3,4 +3,5 @@ while x > 0:
     let y = x
     while y > 0:
         y = y - 1
+        print x y * 2
     x = x - 1

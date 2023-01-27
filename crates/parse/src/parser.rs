@@ -1,8 +1,9 @@
 use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
-    BinaryExpression, Expression, ExpressionStmt, IntegerLiteral, NameDeclStmt,
-    NameDeclarationStatement, NameExpression, Statement, StatementBlock, WhileStatement, WhileStmt,
+    BinaryExpression, Expression, ExpressionStmt, FunctionApplication, IntegerLiteral,
+    NameDeclStmt, NameDeclarationStatement, NameExpression, Statement, StatementBlock,
+    WhileStatement, WhileStmt,
 };
 
 pub struct Parser {
@@ -180,8 +181,26 @@ impl Parser {
     pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
         self.one_of(&[
             |parser| parser.parse_integer().map(IntegerLiteral),
+            |parser| parser.parse_function_application().map(FunctionApplication),
             |parser| parser.parse_name().map(NameExpression),
         ])
+    }
+
+    pub fn parse_function_application(&mut self) -> ParserResult<FunctionApplication> {
+        let name = self.parse_name()?;
+        let args = self.one_or_more(|parser| {
+            parser.one_of(&[
+                |parser| parser.parse_integer().map(IntegerLiteral),
+                |parser| parser.parse_name().map(NameExpression),
+            ])
+        })?;
+
+        Ok(FunctionApplication {
+            span: Default::default(),
+            loc: Default::default(),
+            func: Box::new(Expression::NameExpression(name)),
+            args: args,
+        })
     }
 
     pub fn parse_binop_expr(&mut self) -> ParserResult<Expression> {

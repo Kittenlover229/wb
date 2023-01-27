@@ -1,6 +1,6 @@
 use crate::ast::{
     BinaryExpression, Expression, IntegerLiteral, NameDeclarationStatement, NameExpression,
-    Statement, StatementBlock, WhileStatement,
+    Statement, StatementBlock, WhileStatement, FunctionApplication,
 };
 
 pub trait Visitor<T = ()> {
@@ -16,10 +16,12 @@ pub trait Visitor<T = ()> {
         match expr {
             IntegerLiteral(i) => self.visit_integer_literal(i),
             BinaryExpression(b) => self.visit_binary_expr(b),
-            NameExpression(name) => self.visit_name(name),
+            NameExpression(n) => self.visit_name(n),
+            FunctionApplication(f) => self.visit_function_application(f),
         }
     }
 
+    fn visit_function_application(&mut self, func: &FunctionApplication) -> T;
     fn visit_while(&mut self, w: &WhileStatement) -> T;
     fn visit_statement_block(&mut self, block: &StatementBlock) -> T;
     fn visit_name(&mut self, name: &NameExpression) -> T;
