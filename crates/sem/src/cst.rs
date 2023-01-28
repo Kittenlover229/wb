@@ -8,11 +8,11 @@ pub struct StatementBlock {
 
 #[derive(Debug, Clone)]
 pub struct Statement {
-    pub kind: StatementKind,
+    pub stmt: Stmt,
 }
 
 #[derive(Debug, Clone)]
-pub enum StatementKind {
+pub enum Stmt {
     NameDeclaration { name: String, value: Expression },
 }
 

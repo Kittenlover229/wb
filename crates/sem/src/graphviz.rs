@@ -4,8 +4,7 @@ use crate::{cst::{StatementBlock, Statement, Expr, Expression, BinopExpr}, ty::T
 
 #[derive(Clone, Debug, Default)]
 pub struct CstGraphvizVisualizer {
-    pub verts: Vec<(i32, String)>,
-    pub ty_verts: Vec<(i32, String)>,
+    pub nodes: Vec<(i32, String)>,
     pub edges: Vec<(i32, i32, String)>,
     pub counter: i32,
 }
@@ -15,14 +14,14 @@ impl CstGraphvizVisualizer {
     #[must_use]
     pub fn new_node(&mut self, label: &str) -> i32 {
         self.counter += 1;
-        self.verts.push((self.counter, label.to_owned()));
+        self.nodes.push((self.counter, label.to_owned()));
         self.counter
     }
 
     #[must_use]
     pub fn get_type_node(&mut self, ty: &Type) -> i32 {
         self.counter += 1;
-        self.verts.push((self.counter, "T".to_string()));
+        self.nodes.push((self.counter, "T".to_string()));
         self.counter
     }
 
@@ -33,7 +32,7 @@ impl CstGraphvizVisualizer {
     pub fn dump<W: Write>(&self, out: &mut W) -> io::Result<()> {
         out.write("digraph {\n".as_bytes())?;
         out.write("\trankdir=LR;\n".as_bytes())?;
-        for (vert, label) in &self.verts {
+        for (vert, label) in &self.nodes {
             out.write(format!("\t{vert} [label=\"{label}\"]\n").as_bytes())?;
         }
         for (start, end, label) in &self.edges {
@@ -54,8 +53,8 @@ impl CstGraphvizVisualizer {
     }
 
     pub fn visit_stmt(&mut self, stmt: &Statement) -> i32 {
-        match &stmt.kind {
-            crate::cst::StatementKind::NameDeclaration { name, value } => {
+        match &stmt.stmt {
+            crate::cst::Stmt::NameDeclaration { name, value } => {
                 let this = self.new_node("Name Declaration");
                 let name = self.new_node(name.as_str());
                 let value = self.visit_expression(&value);

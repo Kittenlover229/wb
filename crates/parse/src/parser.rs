@@ -1,9 +1,7 @@
 use lex::{Keyword, Operator, Punctuation, SourceLocation, SourceObject, Token, TokenKind};
 
 use crate::ast::{
-    BinaryExpression, Expression, ExpressionStmt, FunctionApplication, Grouping, IntegerLiteral,
-    NameDeclStmt, NameDeclarationStatement, NameExpression, Statement, StatementBlock,
-    WhileStatement, WhileStmt,
+    BinopExpr, Expr, Expression, FunctionApplication, Statement, StatementBlock, Stmt,
 };
 
 pub struct Parser {
@@ -115,21 +113,25 @@ impl Parser {
 
     pub fn parse_stmt(&mut self) -> ParserResult<Statement> {
         self.one_of(&[
-            |parser| Ok(WhileStmt(parser.parse_while()?)),
+            |parser| parser.parse_while(),
             |parser| {
-                let ret = Ok(NameDeclStmt(parser.parse_var_decl()?))?;
+                let ret = parser.parse_name_decl()?;
                 parser.eat_variant(TokenKind::Newline)?;
                 Ok(ret)
             },
             |parser| {
-                let ret = Ok(ExpressionStmt(parser.parse_expression()?))?;
+                let ret = parser.parse_expression()?;
                 parser.eat_variant(TokenKind::Newline)?;
-                Ok(ret)
+                Ok(Statement {
+                    loc: ret.source_location(),
+                    span: ret.source_span(),
+                    stmt: Stmt::Expression(ret.expr),
+                })
             },
         ])
     }
 
-    pub fn parse_while(&mut self) -> ParserResult<WhileStatement> {
+    pub fn parse_while(&mut self) -> ParserResult<Statement> {
         let while_keyword = self.eat_variant(TokenKind::Keyword(Keyword::While))?;
         let span_begin = while_keyword.source_span().0;
         let loc = while_keyword.source_location();
@@ -145,32 +147,35 @@ impl Parser {
 
         self.eat_variant(TokenKind::Dendent)?;
 
-        Ok(WhileStatement {
-            pred,
-            body,
+        Ok(Statement {
             loc,
             span: (span_begin, span_end),
+            stmt: Stmt::WhileStmt { pred, body },
         })
     }
 
-    /// WIP: this doesn't handle errors at all, but it hopes that it works
-    pub fn parse_var_decl(&mut self) -> ParserResult<NameDeclarationStatement> {
+    pub fn parse_name_decl(&mut self) -> ParserResult<Statement> {
         let let_keyword = self.eat_variant(TokenKind::Keyword(Keyword::Let))?;
-        let source_span_begin = let_keyword.source_span().0;
+        let span_begin = let_keyword.source_span().0;
         let loc = let_keyword.source_location();
 
-        let varname = self.parse_name()?;
+        let name = self.eat(|token| match token {
+            Token {
+                kind: TokenKind::Identifier(name),
+                ..
+            } => Ok(name.to_owned()),
+            _ => Err(ParserFault { loc: token.loc }),
+        })?;
 
         self.eat_if(|token| matches!(token.kind, TokenKind::Operator(Operator::Equals)))?;
 
-        let rhs = self.parse_expression()?;
-        let source_span_end = rhs.source_span().1;
+        let value = self.parse_expression()?;
+        let span_end = value.source_span().1;
 
-        Ok(NameDeclarationStatement {
-            span: (source_span_begin, source_span_end),
-            rhs: rhs,
-            name: varname,
-            loc,
+        Ok(Statement {
+            loc: loc,
+            span: (span_begin, span_end),
+            stmt: Stmt::NameDeclaration { name, value },
         })
     }
 
@@ -180,14 +185,14 @@ impl Parser {
 
     pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
         self.one_of(&[
-            |parser| parser.parse_integer().map(IntegerLiteral),
-            |parser| parser.parse_function_application().map(FunctionApplication),
-            |parser| parser.parse_name().map(NameExpression),
-            |parser| parser.parse_group().map(Grouping),
+            Parser::parse_integer,
+            Parser::parse_function_application,
+            Parser::parse_name,
+            Parser::parse_group,
         ])
     }
 
-    pub fn parse_group(&mut self) -> ParserResult<Grouping> {
+    pub fn parse_group(&mut self) -> ParserResult<Expression> {
         let _first = self.eat_variant(TokenKind::LeftParenthese)?;
         let span_begin = _first.source_span().0;
         let loc = _first.source_location();
@@ -195,28 +200,32 @@ impl Parser {
         let _last = self.eat_variant(TokenKind::RightParenthese)?;
         let span_end = _last.source_span().1;
 
-        Ok(Grouping {
+        Ok(Expression {
             span: (span_begin, span_end),
-            expr: Box::new(expr),
+            expr: Expr::Grouping {
+                expr: Box::new(expr),
+            },
             loc,
         })
     }
 
-    pub fn parse_function_application(&mut self) -> ParserResult<FunctionApplication> {
-        let name = self.parse_name()?;
-        let args = self.one_or_more(|parser| {
-            parser.one_of(&[
-                |parser| parser.parse_integer().map(IntegerLiteral),
-                |parser| parser.parse_name().map(NameExpression),
-                |parser| parser.parse_group().map(Grouping),
+    pub fn parse_function_application(&mut self) -> ParserResult<Expression> {
+        let func = self.parse_name()?;
+        let args = self.one_or_more(|p| {
+            p.one_of(&[
+                Parser::parse_integer,
+                Parser::parse_name,
+                Parser::parse_group,
             ])
         })?;
 
-        Ok(FunctionApplication {
-            span: Default::default(),
-            loc: Default::default(),
-            func: Box::new(Expression::NameExpression(name)),
-            args: args,
+        Ok(Expression {
+            loc: func.source_location(),
+            span: (func.source_span().0, args.last().unwrap().span.1),
+            expr: Expr::FunctionApplication(FunctionApplication {
+                func: Box::new(func),
+                args: args,
+            }),
         })
     }
 
@@ -242,13 +251,15 @@ impl Parser {
                     let span = (lhs.source_span().0, rhs.source_span().1);
                     let loc = lhs.source_location();
 
-                    output_stack.push(Expression::BinaryExpression(BinaryExpression {
-                        span,
+                    output_stack.push(Expression {
                         loc,
-                        operator: op,
-                        rhs: Box::new(rhs),
-                        lhs: Box::new(lhs),
-                    }))
+                        span,
+                        expr: Expr::Binop(BinopExpr {
+                            op,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        }),
+                    });
                 }
             }
 
@@ -264,13 +275,15 @@ impl Parser {
             let span = (lhs.source_span().0, rhs.source_span().1);
             let loc = lhs.source_location();
 
-            output_stack.push(Expression::BinaryExpression(BinaryExpression {
-                operator: op,
-                span,
+            output_stack.push(Expression {
                 loc,
-                rhs: Box::new(rhs),
-                lhs: Box::new(lhs),
-            }))
+                span,
+                expr: Expr::Binop(BinopExpr {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                }),
+            });
         }
 
         let expr = output_stack.pop().unwrap();
@@ -290,7 +303,7 @@ impl Parser {
             Ok(StatementBlock {
                 loc,
                 span: (begin_span, end_span),
-                statements: stmts,
+                stmts,
             })
         } else {
             Err(ParserFault {
@@ -299,24 +312,33 @@ impl Parser {
         }
     }
 
-    pub fn parse_name(&mut self) -> ParserResult<NameExpression> {
-        self.eat::<NameExpression>(|token| match token {
+    pub fn parse_ident(&mut self) -> ParserResult<String> {
+        self.eat::<String>(|token| match token {
             Token {
                 kind: TokenKind::Identifier(identifier),
                 ..
-            } => Ok(NameExpression {
-                loc: token.source_location(),
-                span: token.source_span(),
-                identifier: identifier.to_owned(),
-            }),
+            } => Ok(identifier.to_owned()),
             token => Err(ParserFault {
                 loc: token.source_location(),
             }),
         })
     }
 
-    pub fn parse_integer(&mut self) -> ParserResult<IntegerLiteral> {
-        self.eat_if(|t| matches!(t.kind, TokenKind::Integer(_)))
+    pub fn parse_name(&mut self) -> ParserResult<Expression> {
+        let (loc, span) = {
+            let this = self.current();
+            (this.source_location(), this.source_span())
+        };
+
+        self.parse_ident().map(|ident| Expression {
+            loc,
+            span,
+            expr: Expr::Name(ident),
+        })
+    }
+
+    pub fn parse_integer(&mut self) -> ParserResult<Expression> {
+        self.eat_variant(TokenKind::Integer("".to_string()))
             .map(|token| {
                 if let Token {
                     kind: TokenKind::Integer(int),
@@ -325,10 +347,10 @@ impl Parser {
                     ..
                 } = token
                 {
-                    IntegerLiteral {
-                        number: int.to_owned(),
+                    Expression {
                         span: span.to_owned(),
                         loc: loc.to_owned(),
+                        expr: Expr::IntegerLiteral(int.to_owned()),
                     }
                 } else {
                     unreachable!();

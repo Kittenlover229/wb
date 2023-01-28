@@ -12,11 +12,11 @@ impl From<ast::StatementBlock> for cst::StatementBlock {
 
 impl From<ast::Statement> for cst::Statement {
     fn from(value: ast::Statement) -> Self {
-        cst::Statement { kind: value.into() }
+        cst::Statement { stmt: value.into() }
     }
 }
 
-impl From<ast::Statement> for cst::StatementKind {
+impl From<ast::Statement> for cst::Stmt {
     fn from(value: ast::Statement) -> Self {
         match value {
             ast::Statement::NameDeclStmt(x) => Self::NameDeclaration {

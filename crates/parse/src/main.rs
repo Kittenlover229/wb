@@ -1,12 +1,10 @@
 mod ast;
 mod parser;
-mod visitor;
 mod graphviz;
 
 use graphviz::AstGraphvizVisualizer;
 use parser::*;
 use lex::*;
-use visitor::Visitor;
 use std::fs;
 
 fn main() {
@@ -23,7 +21,7 @@ fn main() {
     let block = parser.parse_stmt_block().unwrap();
 
     let mut visitor = AstGraphvizVisualizer::default();
-    visitor.visit_statement_block(&block);
+    visitor.visit_stmt_block(&block);
     visitor.dump(&mut fs::File::create("out.dot").unwrap()).unwrap();
 
     println!("{block:?}")
