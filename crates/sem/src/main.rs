@@ -23,7 +23,7 @@ fn main() {
 
     let mut solver = TypeSolver::default();
     for stmt in &mut block.stmts {
-        solver.emplace_type_vars_in_stmts(stmt)
+        solver.emplace_type_vars_in_stmt(stmt)
     }
 
     for i in 1..=8 {
@@ -32,12 +32,8 @@ fn main() {
         visitor
             .dump(&mut fs::File::create(format!("out{i}.dot").as_str()).unwrap())
             .unwrap();
-        println!("{i}");
 
         solver.solve_stmt_block_recursive(&mut block);
-        for expr in solver.shallow_expr_iterator_from_stmt_block(&mut block) {
-            solver.apply_constraints_recursive(expr);
-        }
     }
 
     println!("{solver:?}");

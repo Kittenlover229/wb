@@ -36,7 +36,7 @@ impl TypeSolver {
         }
     }
 
-    pub fn emplace_type_vars_in_stmts(&mut self, stmt: &mut Statement) {
+    pub fn emplace_type_vars_in_stmt(&mut self, stmt: &mut Statement) {
         for expr in self.shallow_expr_iterator_from_stmt(stmt) {
             self.emplace_type_vars_in_exprs(expr);
         }
@@ -66,59 +66,29 @@ impl TypeSolver {
         }
     }
 
-    // Temporary function since inary operations are not defined in the symbol table just yet
     pub fn solve_expr_recursive(&mut self, e: &mut Expression) {
         use Expr::*;
         match e {
             Expression {
                 ty: Type::Variable(n),
                 expr,
-            } => e.ty = match expr {
+            } => match expr {
                 Binop(BinopExpr { lhs, rhs, .. }) => {
                     self.solve_expr_recursive(lhs);
                     self.solve_expr_recursive(rhs);
                     if (*lhs).ty == (*rhs).ty {
-                        if *n == 4 {
-                            println!("!!!!!!!!!!!!{lhs:?}, {rhs:?}")
-                        }
                         self.constraints.insert(*n, lhs.ty.to_owned());
-                        lhs.ty.to_owned()
-                    } else {
-                        e.ty.to_owned()
+                        e.ty = lhs.ty.to_owned();
                     }
                 }
                 Name(name) => {
                     let ty = self.symbol_table.get(name).unwrap().to_owned();
-                    self.constraints
-                        .insert(*n, ty.to_owned());
-                    ty
+                    self.constraints.insert(*n, ty.to_owned());
+                    e.ty = ty;
                 }
-                _ => e.ty.to_owned()
+                _ => {}
             },
             _ => {}
-        }
-    }
-
-    pub fn apply_constraints_recursive(&mut self, expr: &mut Expression) {
-        let Expression { ty, expr } = expr;
-        if let Type::Variable(n) = ty {
-            if *n == 4 {
-                println!("{expr:?}");
-            }
-            let z = &self.constraints;
-            println!("{z:?}");
-            let new_ty = self.constraints.get(&n).unwrap().to_owned();
-            *ty = new_ty.clone();
-            println!("{new_ty:?}, {ty:?}");
-        };
-
-        match expr {
-            Expr::Binop(BinopExpr { lhs, rhs, .. }) => {
-                self.apply_constraints_recursive(lhs);
-                self.apply_constraints_recursive(rhs);
-            }
-            Expr::Name(_) => {}
-            Expr::Integer(_) => {}
         }
     }
 
@@ -138,7 +108,7 @@ impl TypeSolver {
         stmt: &'a mut Statement,
     ) -> impl IntoIterator<Item = &'a mut Expression> {
         match &mut stmt.stmt {
-            crate::cst::Stmt::NameDeclaration { name, value } => vec![value].into_iter(),
+            crate::cst::Stmt::NameDeclaration { value, .. } => vec![value].into_iter(),
             crate::cst::Stmt::Expression(expr) => vec![expr].into_iter(),
             crate::cst::Stmt::While { pred, body } => {
                 let mut out = vec![pred];
