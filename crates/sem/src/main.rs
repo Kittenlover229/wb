@@ -2,11 +2,13 @@ mod cst;
 mod ty;
 mod ast2cst;
 mod graphviz;
+mod solver;
 
 use cst::StatementBlock;
 use graphviz::CstGraphvizVisualizer;
 use parse::Parser;
 use lex::*;
+use solver::{TypeSolver, emplace_types_in_block};
 use std::fs;
 
 fn main() {
@@ -21,7 +23,10 @@ fn main() {
     
     let mut parser = Parser::new(toks);
     let block = parser.parse_stmt_block().unwrap();
-    let block: StatementBlock = block.into();
+    let mut block: StatementBlock = block.into();
+
+    let mut solver = TypeSolver::default();
+    emplace_types_in_block(&mut solver, &mut block);
 
     let mut visitor = CstGraphvizVisualizer::default();
     visitor.visit_stmt_block(&block.into());

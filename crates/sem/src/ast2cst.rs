@@ -1,64 +1,60 @@
 use crate::{cst, ty::Type};
-use ast::{BinaryExpression, IntegerLiteral};
 use parse as ast;
 
-impl From<ast::StatementBlock> for cst::StatementBlock {
-    fn from(value: ast::StatementBlock) -> Self {
-        cst::StatementBlock {
-            stmts: value.statements.into_iter().map(Into::into).collect(),
+impl From<ast::Statement> for cst::Statement {
+    fn from(value: ast::Statement) -> Self {
+        Self {
+            stmt: value.stmt.into(),
         }
     }
 }
 
-impl From<ast::Statement> for cst::Statement {
-    fn from(value: ast::Statement) -> Self {
-        cst::Statement { stmt: value.into() }
+impl From<ast::Stmt> for cst::Stmt {
+    fn from(value: ast::Stmt) -> Self {
+        match value {
+            ast::Stmt::NameDeclaration { name, value } => Self::NameDeclaration {
+                name,
+                value: value.into(),
+            },
+            _ => todo!(),
+        }
     }
 }
 
-impl From<ast::Statement> for cst::Stmt {
-    fn from(value: ast::Statement) -> Self {
-        match value {
-            ast::Statement::NameDeclStmt(x) => Self::NameDeclaration {
-                name: "varname".to_owned(),
-                value: x.rhs.into(),
-            },
-            ast::Statement::WhileStmt(_) => todo!(),
-            ast::Statement::ExpressionStmt(_) => todo!(),
+impl From<ast::StatementBlock> for cst::StatementBlock {
+    fn from(value: ast::StatementBlock) -> Self {
+        Self {
+            stmts: value.stmts.into_iter().map(Into::into).collect(),
         }
     }
 }
 
 impl From<ast::Expression> for cst::Expression {
     fn from(value: ast::Expression) -> Self {
-        cst::Expression {
+        Self {
             ty: Type::Variable(0),
-            expr: value.into(),
+            expr: value.expr.into(),
         }
     }
 }
 
-impl From<ast::Expression> for cst::Expr {
-    fn from(value: ast::Expression) -> Self {
+impl From<ast::Expr> for cst::Expr {
+    fn from(value: ast::Expr) -> Self {
         match value {
-            ast::Expression::IntegerLiteral(IntegerLiteral { number, .. }) => {
-                cst::Expr::Integer(number)
-            }
-            ast::Expression::BinaryExpression(BinaryExpression {
-                operator: op,
-                lhs,
-                rhs,
-                ..
-            }) => cst::Expr::Binop(cst::BinopExpr {
-                op,
-                lhs: Box::new((*lhs).into()),
-                rhs: Box::new((*rhs).into()),
-            }),
-            ast::Expression::NameExpression(ast::NameExpression { identifier, .. }) => {
-                cst::Expr::Name(identifier)
-            }
+            ast::Expr::IntegerLiteral(n) => Self::Integer(n),
+            ast::Expr::Binop(binop) => Self::Binop(binop.into()),
+            ast::Expr::Name(name) => Self::Name(name),
+            _ => todo!(),
+        }
+    }
+}
 
-            _ => unreachable!(),
+impl From<ast::BinopExpr> for cst::BinopExpr {
+    fn from(value: ast::BinopExpr) -> Self {
+        Self {
+            op: value.op,
+            lhs: Box::new((*value.lhs).into()),
+            rhs: Box::new((*value.rhs).into())
         }
     }
 }
