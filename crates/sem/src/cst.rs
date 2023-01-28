@@ -55,13 +55,6 @@ impl Typed for Expression {
 #[derive(Debug, Clone)]
 pub enum Expr {
     Name(String),
-    Binop(BinopExpr),
+    Binop{ op: Operator, lhs: Box<Expression>, rhs: Box<Expression> },
     Integer(String),
-}
-
-#[derive(Debug, Clone)]
-pub struct BinopExpr {
-    pub op: Operator,
-    pub lhs: Box<Expression>,
-    pub rhs: Box<Expression>,
 }

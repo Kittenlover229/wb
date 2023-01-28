@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    cst::{BinopExpr, Expr, Expression, Statement, StatementBlock},
+    cst::{Expr, Expression, Statement, StatementBlock},
     ty::Type,
 };
 
@@ -27,7 +27,7 @@ impl TypeSolver {
                 self.symbol_table.insert(name.to_owned(), t.clone());
                 t
             }
-            Expr::Binop(BinopExpr { lhs, rhs, .. }) => {
+            Expr::Binop { lhs, rhs, .. } => {
                 self.emplace_type_vars_in_exprs(lhs);
                 self.emplace_type_vars_in_exprs(rhs);
                 self.make_var_type()
@@ -73,7 +73,7 @@ impl TypeSolver {
                 ty: Type::Variable(n),
                 expr,
             } => match expr {
-                Binop(BinopExpr { lhs, rhs, .. }) => {
+                Binop { lhs, rhs, .. } => {
                     self.solve_expr_recursive(lhs);
                     self.solve_expr_recursive(rhs);
                     if (*lhs).ty == (*rhs).ty {

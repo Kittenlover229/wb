@@ -49,19 +49,13 @@ impl From<ast::Expr> for cst::Expr {
     fn from(value: ast::Expr) -> Self {
         match value {
             ast::Expr::IntegerLiteral(n) => Self::Integer(n),
-            ast::Expr::Binop(binop) => Self::Binop(binop.into()),
+            ast::Expr::Binop(binop) => Self::Binop {
+                op: binop.op,
+                lhs: Box::new((*binop.lhs).into()),
+                rhs: Box::new((*binop.rhs).into()),
+            },
             ast::Expr::Name(name) => Self::Name(name),
             _ => todo!(),
-        }
-    }
-}
-
-impl From<ast::BinopExpr> for cst::BinopExpr {
-    fn from(value: ast::BinopExpr) -> Self {
-        Self {
-            op: value.op,
-            lhs: Box::new((*value.lhs).into()),
-            rhs: Box::new((*value.rhs).into()),
         }
     }
 }

@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use crate::{
-    cst::{BinopExpr, Expr, Expression, Statement, StatementBlock},
+    cst::{Expr, Expression, Statement, StatementBlock},
     ty::Type,
 };
 
@@ -103,23 +103,21 @@ impl CstGraphvizVisualizer {
     pub fn visit_expression(&mut self, expr: &Expression) -> i32 {
         let this = match &expr.expr {
             Expr::Name(name) => self.new_node(name.as_str()),
-            Expr::Binop(binop) => self.visit_binop(&binop),
+            Expr::Binop { op, lhs, rhs } => {
+                let this = self.new_node(op.to_owned().into());
+                let lhs = self.visit_expression(&lhs);
+                let rhs = self.visit_expression(&rhs);
+
+                self.new_edge(this, lhs, "lhs");
+                self.new_edge(this, rhs, "rhs");
+
+                this
+            }
             Expr::Integer(number) => self.new_node(number.as_str()),
         };
 
         let ty = self.get_type_node(&expr.ty);
         self.new_edge(this, ty, "  : type");
-
-        this
-    }
-
-    pub fn visit_binop(&mut self, binop: &BinopExpr) -> i32 {
-        let this = self.new_node(binop.op.into());
-        let lhs = self.visit_expression(&binop.lhs);
-        let rhs = self.visit_expression(&binop.rhs);
-
-        self.new_edge(this, lhs, "lhs");
-        self.new_edge(this, rhs, "rhs");
 
         this
     }
