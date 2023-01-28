@@ -97,7 +97,7 @@ impl CstGraphvizVisualizer {
     pub fn visit_binop(&mut self, binop: &BinopExpr) -> i32 {
         let this = self.new_node(binop.op.into());
         let lhs = self.visit_expression(&binop.lhs);
-        let rhs = self.visit_expression(&binop.lhs);
+        let rhs = self.visit_expression(&binop.rhs);
 
         self.new_edge(this, lhs, "lhs");
         self.new_edge(this, rhs, "rhs");
