@@ -1,5 +1,4 @@
 # /usr/bin/bash
-
 cargo run --bin sem
 dot out1.dot -Tpng > out1.png
 dot out2.dot -Tpng > out2.png

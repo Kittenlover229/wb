@@ -15,7 +15,7 @@ pub struct Statement {
 pub enum Stmt {
     NameDeclaration { name: String, value: Expression },
     While { pred: Expression, body: StatementBlock },
-    Expression(Expr),
+    Expression(Expression),
 }
 
 #[derive(Debug, Clone)]

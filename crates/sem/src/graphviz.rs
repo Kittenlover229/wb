@@ -94,7 +94,9 @@ impl CstGraphvizVisualizer {
 
                 this
             }
-            crate::cst::Stmt::Expression(expr) => todo!(),
+            crate::cst::Stmt::Expression(expr) => {
+                self.visit_expression(expr)
+            },
         }
     }
 

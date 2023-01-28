@@ -20,7 +20,10 @@ impl From<ast::Stmt> for cst::Stmt {
                 pred: pred.into(),
                 body: body.into(),
             },
-            ast::Stmt::Expression(expr) => Self::Expression(expr.into()),
+            ast::Stmt::Expression(expr) => Self::Expression(cst::Expression {
+                expr: expr.into(),
+                ty: Type::default(),
+            }),
         }
     }
 }
@@ -36,7 +39,7 @@ impl From<ast::StatementBlock> for cst::StatementBlock {
 impl From<ast::Expression> for cst::Expression {
     fn from(value: ast::Expression) -> Self {
         Self {
-            ty: Type::Variable(0),
+            ty: Type::default(),
             expr: value.expr.into(),
         }
     }
