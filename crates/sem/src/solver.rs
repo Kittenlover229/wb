@@ -1,14 +1,15 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    cst::{BinopExpr, Expr, Expression, StatementBlock},
+    cst::{BinopExpr, Expr, Expression, Statement, StatementBlock},
     ty::Type,
 };
 
 #[derive(Debug, Clone, Default)]
 pub struct TypeSolver {
-    pub constraints: BTreeMap<u16, Type>,
-    pub counter: u16,
+    pub constraints: BTreeMap<u128, Type>,
+    pub symbol_table: BTreeMap<String, Type>,
+    pub counter: u128,
 }
 
 impl TypeSolver {
@@ -19,8 +20,25 @@ impl TypeSolver {
         typevar
     }
 
-    pub fn emplace_type_variables(&mut self, expr: &mut Expression) {
+    pub fn emplace_type_vars_in_exprs(&mut self, expr: &mut Expression) {
         self.walk_expressions(expr, |this, expr| expr.ty = this.make_var_type());
+    }
+
+    pub fn emplace_type_vars_in_stmts(&mut self, stmt: &mut Statement) {
+        match &mut stmt.stmt {
+            crate::cst::Stmt::NameDeclaration {
+                name,
+                value:
+                    Expression {
+                        ty: Type::Variable(n),
+                        ..
+                    },
+            } if *n != 0 => {
+                self.symbol_table
+                    .insert(name.to_owned(), Type::Variable(*n));
+            }
+            _ => {}
+        }
     }
 
     pub fn constrain_literal_types(&mut self, expr: &mut Expression) {
@@ -33,20 +51,37 @@ impl TypeSolver {
         });
     }
 
-    // Temporary function since inary operations are not defined in the symbol table just yet
-    pub fn solve_binops(&mut self, expr: &mut Expression) {
-        self.walk_expressions(expr, |this, expr| match expr {
-            Expression {
-                ty: Type::Variable(n),
-                expr: Expr::Binop(BinopExpr { lhs, rhs, .. }),
-            } => {
-                println!("{lhs:?}");
-                println!("{rhs:?}");
-                if (*lhs).ty == (*rhs).ty {
-                    this.constraints.insert(*n, lhs.ty.to_owned());
-                }
+    pub fn solve_name_decls(&mut self, stmt: &mut Statement) {
+        match &mut stmt.stmt {
+            crate::cst::Stmt::NameDeclaration { name, value } => {
+                self.symbol_table
+                    .get_mut(name)
+                    .map(|ty| *ty = value.ty.to_owned());
             }
-            _ => {}
+        }
+    }
+
+    // Temporary function since inary operations are not defined in the symbol table just yet
+    pub fn solve_exprs(&mut self, expr: &mut Expression) {
+        self.walk_expressions(expr, |this, expr| {
+            use Expr::*;
+            match expr {
+                Expression {
+                    ty: Type::Variable(n),
+                    expr,
+                } => match expr {
+                    Binop(BinopExpr { lhs, rhs, .. }) => {
+                        if (*lhs).ty == (*rhs).ty {
+                            this.constraints.insert(*n, lhs.ty.to_owned());
+                        }
+                    }
+                    Name(name) => {
+                        this.constraints.insert(*n, this.symbol_table.get(name).unwrap().to_owned());
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
         });
     }
 
@@ -78,7 +113,7 @@ impl TypeSolver {
     }
 }
 
-pub(crate) fn do_for_all(
+pub(crate) fn do_for_all_exprs(
     solver: &mut TypeSolver,
     block: &mut StatementBlock,
     func: fn(&mut TypeSolver, &mut Expression),
@@ -87,5 +122,15 @@ pub(crate) fn do_for_all(
         match &mut stmt.stmt {
             crate::cst::Stmt::NameDeclaration { value, .. } => func(solver, value),
         }
+    }
+}
+
+pub(crate) fn do_for_all_stmts(
+    solver: &mut TypeSolver,
+    block: &mut StatementBlock,
+    func: fn(&mut TypeSolver, &mut Statement),
+) {
+    for stmt in &mut block.stmts {
+        func(solver, stmt);
     }
 }

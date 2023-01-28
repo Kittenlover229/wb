@@ -33,7 +33,6 @@ impl CstGraphvizVisualizer {
 
     pub fn dump<W: Write>(&self, out: &mut W) -> io::Result<()> {
         out.write("digraph {\n".as_bytes())?;
-        out.write("\trankdir=LR;\n".as_bytes())?;
         for (vert, label) in &self.nodes {
             out.write(format!("\t{vert} [label=\"{label}\"]\n").as_bytes())?;
         }

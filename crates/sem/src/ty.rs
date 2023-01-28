@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Variable(u16),
+    Variable(u128),
     Integer,
     Bool,
 }
