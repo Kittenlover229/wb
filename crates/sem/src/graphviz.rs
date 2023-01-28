@@ -20,9 +20,11 @@ impl CstGraphvizVisualizer {
 
     #[must_use]
     pub fn get_type_node(&mut self, ty: &Type) -> i32 {
-        self.counter += 1;
-        self.nodes.push((self.counter, "T".to_string()));
-        self.counter
+        match ty {
+            Type::Variable(var) => self.new_node(format!("T{}", var).as_str()),
+            Type::Integer => self.new_node("Integer"),
+            Type::Bool => self.new_node("Bool"),
+        }
     }
 
     pub fn new_edge(&mut self, start: i32, end: i32, label: &str) {
@@ -80,18 +82,10 @@ impl CstGraphvizVisualizer {
             },
         };
 
-        let ty = self.visit_type(&expr.ty);
+        let ty = self.get_type_node(&expr.ty);
         self.new_edge(this, ty, "type");
 
         this
-    }
-
-    pub fn visit_type(&mut self, ty: &Type) -> i32 {
-        match ty {
-            Type::Variable(var) => self.new_node(format!("t{}", var).as_str()),
-            Type::Integer => self.new_node("Integer"),
-            Type::Bool => self.new_node("Bool"),
-        }
     }
 
     pub fn visit_binop(&mut self, binop: &BinopExpr) -> i32 {

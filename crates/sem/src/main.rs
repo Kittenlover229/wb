@@ -8,7 +8,7 @@ use cst::StatementBlock;
 use graphviz::CstGraphvizVisualizer;
 use parse::Parser;
 use lex::*;
-use solver::{TypeSolver, emplace_types_in_block};
+use solver::{TypeSolver, do_for_all};
 use std::fs;
 
 fn main() {
@@ -26,7 +26,10 @@ fn main() {
     let mut block: StatementBlock = block.into();
 
     let mut solver = TypeSolver::default();
-    emplace_types_in_block(&mut solver, &mut block);
+    do_for_all(&mut solver, &mut block, TypeSolver::emplace_type_variables);
+    do_for_all(&mut solver, &mut block, TypeSolver::contrain_literal_types);
+    do_for_all(&mut solver, &mut block, TypeSolver::apply_constraints);
+    println!("{solver:?}");
 
     let mut visitor = CstGraphvizVisualizer::default();
     visitor.visit_stmt_block(&block.into());
