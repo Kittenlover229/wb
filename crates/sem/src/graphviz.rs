@@ -8,6 +8,7 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 pub struct CstGraphvizVisualizer {
     pub nodes: Vec<(i32, String)>,
+    pub type_nodes: Vec<(i32, String)>,
     pub edges: Vec<(i32, i32, String)>,
     pub counter: i32,
 }
@@ -20,12 +21,18 @@ impl CstGraphvizVisualizer {
         self.counter
     }
 
+    pub fn new_type_node(&mut self, typename: &str) -> i32 {
+        self.counter += 1;
+        self.type_nodes.push((self.counter, typename.to_owned()));
+        self.counter
+    }
+
     #[must_use]
     pub fn get_type_node(&mut self, ty: &Type) -> i32 {
         match ty {
-            Type::Variable(var) => self.new_node(format!("T{}", var).as_str()),
-            Type::Integer => self.new_node("Integer"),
-            Type::Bool => self.new_node("Bool"),
+            Type::Variable(var) => self.new_type_node(format!("T{}", var).as_str()),
+            Type::Integer => self.new_type_node("Integer"),
+            Type::Bool => self.new_type_node("Bool"),
         }
     }
 
@@ -38,9 +45,19 @@ impl CstGraphvizVisualizer {
         for (vert, label) in &self.nodes {
             out.write(format!("\t{vert} [label=\"{label}\"]\n").as_bytes())?;
         }
-        for (start, end, label) in &self.edges {
-            out.write(format!("\t{start}->{end} [label=\"{label}\"]\n").as_bytes())?;
+
+        for (vert, label) in &self.type_nodes {
+            out.write(format!("\t{vert} [label=\"{label}\" shape=none color=gray fontcolor=gray]\n").as_bytes())?;
         }
+
+        for (start, end, label) in &self.edges {
+            if self.type_nodes.iter().filter(|x| *end == x.0).count() == 1 {
+                out.write(format!("\t{start}->{end} [arrowhead=onormal color=gray fontcolor=gray]\n").as_bytes())?;
+            } else {
+                out.write(format!("\t{start}->{end} [label=\"{label}\"]\n").as_bytes())?;
+            }
+        }
+
         out.write("}\n".as_bytes())?;
         Ok(())
     }
@@ -89,7 +106,7 @@ impl CstGraphvizVisualizer {
         };
 
         let ty = self.get_type_node(&expr.ty);
-        self.new_edge(this, ty, "type");
+        self.new_edge(this, ty, "  : type");
 
         this
     }
