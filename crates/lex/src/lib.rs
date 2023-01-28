@@ -2,6 +2,7 @@ mod indent;
 mod rules;
 mod token;
 mod tokenizer;
+mod err;
 
 pub use indent::*;
 pub use rules::*;

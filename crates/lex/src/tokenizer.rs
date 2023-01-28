@@ -12,22 +12,8 @@ pub struct TokenStream<'a> {
     tokenizer_rules: Vec<Box<dyn TokenizerRule>>,
 }
 
-pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
-    fn string_to_op(string: &str) -> Operator {
-        match string {
-            "+" => Operator::Add,
-            "-" => Operator::Sub,
-            "*" => Operator::Mul,
-            "/" => Operator::Div,
-            "%" => Operator::Mod,
-            ">" => Operator::Greater,
-            "<" => Operator::Less,
-            "=" => Operator::Equals,
-            _ => unreachable!(),
-        }
-    }
-
-    let tokenizer_rules: Vec<Box<dyn TokenizerRule>> = vec![
+pub fn default_tokenizer_rules() -> Vec<Box<dyn TokenizerRule>> {
+    vec![
         RegexTokenizerRule::new_box(
             Regex::new(r"^(let|while)").unwrap(),
             Box::new(|captured: &str, span, loc| {
@@ -96,7 +82,9 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::CompoundOperator(string_to_op(&captured[..captured.len() - 1])),
+                kind: TokenKind::CompoundOperator(
+                    (&captured[..captured.len() - 1]).try_into().unwrap(),
+                ),
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -104,7 +92,7 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
             Box::new(|captured, span, loc| Token {
                 loc,
                 span,
-                kind: TokenKind::Operator(string_to_op(captured)),
+                kind: TokenKind::Operator(captured.try_into().unwrap()),
             }),
         ),
         RegexTokenizerRule::new_box(
@@ -119,12 +107,25 @@ pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
                 }),
             }),
         ),
-    ];
+    ]
+}
 
+#[deprecated]
+pub fn try_tokenize<'a>(input: &'a str) -> TokenStream<'a> {
     TokenStream {
         input: Some(input),
         loc: Default::default(),
-        tokenizer_rules,
+        tokenizer_rules: default_tokenizer_rules(),
+    }
+}
+
+impl<'a> TokenStream<'a> {
+    pub fn new(input: &'a str) -> TokenStream<'a> {
+        TokenStream {
+            input: Some(input),
+            loc: Default::default(),
+            tokenizer_rules: default_tokenizer_rules(),
+        }
     }
 }
 

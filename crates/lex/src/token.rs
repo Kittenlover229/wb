@@ -85,6 +85,24 @@ impl Into<&str> for Operator {
     }
 }
 
+impl TryFrom<&str> for Operator {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "+" => Ok(Operator::Add),
+            "-" => Ok(Operator::Sub),
+            "*" => Ok(Operator::Mul),
+            "/" => Ok(Operator::Div),
+            "%" => Ok(Operator::Mod),
+            ">" => Ok(Operator::Greater),
+            "<" => Ok(Operator::Less),
+            "=" => Ok(Operator::Equals),
+            _ => Err(())
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Punctuation {
     Colon,
