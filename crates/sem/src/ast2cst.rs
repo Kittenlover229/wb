@@ -16,7 +16,11 @@ impl From<ast::Stmt> for cst::Stmt {
                 name,
                 value: value.into(),
             },
-            _ => todo!(),
+            ast::Stmt::WhileStmt { pred, body } => Self::While {
+                pred: pred.into(),
+                body: body.into(),
+            },
+            ast::Stmt::Expression(expr) => Self::Expression(expr.into()),
         }
     }
 }
@@ -54,7 +58,7 @@ impl From<ast::BinopExpr> for cst::BinopExpr {
         Self {
             op: value.op,
             lhs: Box::new((*value.lhs).into()),
-            rhs: Box::new((*value.rhs).into())
+            rhs: Box::new((*value.rhs).into()),
         }
     }
 }

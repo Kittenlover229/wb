@@ -4,4 +4,3 @@ pub enum Type {
     Integer,
     Bool,
 }
-

@@ -32,7 +32,7 @@ fn main() {
     do_for_all_stmts(&mut solver, &mut block, TypeSolver::emplace_type_vars_in_stmts);
     do_for_all_exprs(&mut solver, &mut block, TypeSolver::constrain_literal_types);
     println!("{solver:?}");
-
+    
     for i in 1..=8 {
         let mut visitor = CstGraphvizVisualizer::default();
         visitor.visit_stmt_block(&block);
@@ -40,7 +40,7 @@ fn main() {
             .dump(&mut fs::File::create(format!("out{i}.dot").as_str()).unwrap())
             .unwrap();
 
-        do_for_all_stmts(&mut solver, &mut block, TypeSolver::solve_name_decls);
+        do_for_all_stmts(&mut solver, &mut block, TypeSolver::solve_stmts);
         do_for_all_exprs(&mut solver, &mut block, TypeSolver::solve_exprs);
         do_for_all_exprs(&mut solver, &mut block, TypeSolver::apply_constraints);
     }

@@ -51,13 +51,20 @@ impl TypeSolver {
         });
     }
 
-    pub fn solve_name_decls(&mut self, stmt: &mut Statement) {
+    pub fn solve_stmts(&mut self, stmt: &mut Statement) {
         match &mut stmt.stmt {
             crate::cst::Stmt::NameDeclaration { name, value } => {
                 self.symbol_table
                     .get_mut(name)
                     .map(|ty| *ty = value.ty.to_owned());
             }
+            crate::cst::Stmt::While { pred, body } => {
+                self.solve_exprs(pred);
+                for stmt in &mut body.stmts {
+                    self.solve_stmts(stmt);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -74,9 +81,12 @@ impl TypeSolver {
                         if (*lhs).ty == (*rhs).ty {
                             this.constraints.insert(*n, lhs.ty.to_owned());
                         }
+                        this.solve_exprs(lhs);
+                        this.solve_exprs(rhs);
                     }
                     Name(name) => {
-                        this.constraints.insert(*n, this.symbol_table.get(name).unwrap().to_owned());
+                        this.constraints
+                            .insert(*n, this.symbol_table.get(name).unwrap().to_owned());
                     }
                     _ => {}
                 },
@@ -121,6 +131,11 @@ pub(crate) fn do_for_all_exprs(
     for stmt in &mut block.stmts {
         match &mut stmt.stmt {
             crate::cst::Stmt::NameDeclaration { value, .. } => func(solver, value),
+            crate::cst::Stmt::While { pred, body } => {
+                func(solver, pred);
+                do_for_all_exprs(solver, body, func);
+            }
+            crate::cst::Stmt::Expression(_) => todo!(),
         }
     }
 }

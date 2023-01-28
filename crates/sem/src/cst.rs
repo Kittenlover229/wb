@@ -14,6 +14,8 @@ pub struct Statement {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     NameDeclaration { name: String, value: Expression },
+    While { pred: Expression, body: StatementBlock },
+    Expression(Expr),
 }
 
 #[derive(Debug, Clone)]

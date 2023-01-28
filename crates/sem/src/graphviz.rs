@@ -1,6 +1,9 @@
-use std::io::{Write, self};
+use std::io::{self, Write};
 
-use crate::{cst::{StatementBlock, Statement, Expr, Expression, BinopExpr}, ty::Type};
+use crate::{
+    cst::{BinopExpr, Expr, Expression, Statement, StatementBlock},
+    ty::Type,
+};
 
 #[derive(Clone, Debug, Default)]
 pub struct CstGraphvizVisualizer {
@@ -8,7 +11,6 @@ pub struct CstGraphvizVisualizer {
     pub edges: Vec<(i32, i32, String)>,
     pub counter: i32,
 }
-
 
 impl CstGraphvizVisualizer {
     #[must_use]
@@ -64,21 +66,26 @@ impl CstGraphvizVisualizer {
                 self.new_edge(this, value, "value");
 
                 this
-            },
+            }
+            crate::cst::Stmt::While { pred, body } => {
+                let this = self.new_node("While");
+                let pred = self.visit_expression(pred);
+                let body = self.visit_stmt_block(body);
+
+                self.new_edge(this, pred, "pred");
+                self.new_edge(this, body, "body");
+
+                this
+            }
+            crate::cst::Stmt::Expression(expr) => todo!(),
         }
     }
 
     pub fn visit_expression(&mut self, expr: &Expression) -> i32 {
         let this = match &expr.expr {
-            Expr::Name(name) => {
-                self.new_node(name.as_str())
-            },
-            Expr::Binop(binop) => {
-                self.visit_binop(&binop)
-            },
-            Expr::Integer(number) => {
-                self.new_node(number.as_str())
-            },
+            Expr::Name(name) => self.new_node(name.as_str()),
+            Expr::Binop(binop) => self.visit_binop(&binop),
+            Expr::Integer(number) => self.new_node(number.as_str()),
         };
 
         let ty = self.get_type_node(&expr.ty);
