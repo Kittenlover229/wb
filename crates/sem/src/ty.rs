@@ -5,6 +5,19 @@ pub enum Type {
     Bool,
 }
 
+pub trait Typed {
+    fn is_complete(&self) -> bool;
+}
+
+impl Typed for Type {
+    fn is_complete(&self) -> bool {
+        match self {
+            Self::Variable(_) => false,
+            Self::Integer | Self::Bool => true,
+        }
+    }
+}
+
 impl PartialEq for Type {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

@@ -11,6 +11,8 @@ use parse::Parser;
 use solver::TypeSolver;
 use std::fs;
 
+use crate::ty::Typed;
+
 fn main() {
     let contents = fs::read_to_string("sample.wb").expect("Should have been able to read the file");
     let tokens = try_tokenize(contents.as_str());
@@ -26,7 +28,8 @@ fn main() {
         solver.emplace_type_vars_in_stmt(stmt)
     }
 
-    for i in 1..=8 {
+    let mut i = 0;
+    while !block.is_complete() && i < 10 {
         let mut visitor = CstGraphvizVisualizer::default();
         visitor.visit_stmt_block(&block);
         visitor
@@ -34,7 +37,14 @@ fn main() {
             .unwrap();
 
         solver.solve_stmt_block_recursive(&mut block);
+        i += 1;
     }
+
+    let mut visitor = CstGraphvizVisualizer::default();
+    visitor.visit_stmt_block(&block);
+    visitor
+        .dump(&mut fs::File::create(format!("out{i}.dot").as_str()).unwrap())
+        .unwrap();
 
     println!("{solver:?}");
 }
