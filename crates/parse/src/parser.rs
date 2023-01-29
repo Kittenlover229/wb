@@ -180,13 +180,12 @@ impl Parser {
     }
 
     pub fn parse_expression(&mut self) -> ParserResult<Expression> {
-        self.parse_binop_expr()
+        self.one_of(&[Self::parse_function_application, Self::parse_binop_expr])
     }
 
     pub fn parse_primary_expression(&mut self) -> ParserResult<Expression> {
         self.one_of(&[
             Parser::parse_integer,
-            Parser::parse_function_application,
             Parser::parse_name,
             Parser::parse_group,
         ])
